@@ -1,0 +1,9 @@
+main global 
+headings (h1-6)
+hyperlinks
+reuseable container, card, etc
+prof btn and sec btn
+card
+selection
+scrollbar
+hero section

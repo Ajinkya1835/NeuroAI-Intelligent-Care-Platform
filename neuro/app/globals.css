@@ -1,0 +1,344 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --background: #ffffff;
+  --foreground: #173f4f;
+  --primary: #1f6678;
+  --primary-light: #eaf4f6;
+  --secondary: #5f7d86;
+  --border: #dce7ea;
+  --text-dark: #18323b;
+  --text-light: #61757c;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', Arial, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Professional serif headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  color: var(--text-dark);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+h3 {
+  font-size: 1.7rem;
+}
+
+p {
+  color: var(--text-light);
+  font-size: 1rem;
+}
+
+/* Hyperlinks */
+a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: #123f4c;
+  text-decoration-thickness: 2px;
+}
+
+/* Navigation links */
+nav a {
+  text-decoration: none;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+nav a:hover {
+  color: var(--primary);
+}
+
+/* Links inside cards */
+.card a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.card a:hover {
+  color: #123f4c;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Reusable container */
+.container {
+  width: min(90%, 1200px);
+  margin: 0 auto;
+}
+
+/* Reusable section */
+.section {
+  padding: 80px 0;
+}
+
+/* Professional button */
+.btn-primary {
+  display: inline-block;
+  padding: 12px 26px;
+  background: var(--primary);
+  color: #ffffff;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.btn-primary:hover {
+  background: #174f5e;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* Secondary button */
+.btn-secondary {
+  display: inline-block;
+  padding: 11px 25px;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--primary-light);
+}
+
+/* Cards */
+.card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 25px;
+  transition: all 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(23, 63, 79, 0.08);
+}
+
+/* Selection */
+::selection {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f8f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9bb7bf;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .section {
+    padding: 60px 0;
+  }
+
+  h1 {
+    font-size: 2.6rem;
+  }
+
+  h2 {
+    font-size: 2.2rem;
+  }
+}
+
+/* =========================================================
+   HERO SECTION
+   ========================================================= */
+
+.hero {
+  position:relative;
+  min-height: 45vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  /* Replace this with your image */
+  background-image: url('/images/hero-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  overflow: hidden;
+}
+
+/* Teal colour filter / overlay */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+
+  background: rgba(23, 63, 79, 0.78);
+
+  z-index: 1;
+}
+
+/* Optional subtle gradient for better readability */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    135deg,
+    rgba(31, 102, 120, 0.35),
+    rgba(23, 63, 79, 0.25)
+  );
+
+  z-index: 2;
+}
+
+/* Hero content */
+.hero-content {
+  position: relative;
+  z-index: 3;
+
+  width: min(90%, 850px);
+  margin: 0 auto;
+
+  padding: 60px 20px;
+}
+
+/* Small label above heading */
+.hero-label {
+  display: inline-block;
+
+  margin-bottom: 12px;
+
+  color: #dceff2;
+
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Main hero heading */
+.hero h1 {
+  margin-bottom: 15px;
+
+  color: #ffffff;
+
+  font-family: 'DM Serif Display',
+    Georgia,
+    'Times New Roman',
+    serif;
+
+  font-size: clamp(2.3rem, 5vw, 4rem);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+/* Hero description */
+.hero p {
+  max-width: 700px;
+  margin: 0 auto 25px;
+
+  color: #e8f3f5;
+
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+
+/* Hero button */
+.hero .btn-primary {
+  background: #ffffff;
+  color: var(--primary);
+
+  padding: 11px 24px;
+
+  border-radius: 6px;
+}
+
+.hero .btn-primary:hover {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+
+/* =========================================================
+   MOBILE HERO
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .hero {
+    min-height: 40vh;
+  }
+
+  .hero-content {
+    padding: 45px 15px;
+  }
+
+  .hero h1 {
+    font-size: 2.4rem;
+  }
+
+  .hero p {
+    font-size: 0.95rem;
+  }
+}
