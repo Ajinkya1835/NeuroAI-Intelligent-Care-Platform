@@ -70,21 +70,21 @@ export default function AboutUs() {
             }}
           >
             <div className="card">
-              <h3>📊 Track Progress</h3>
+              <h3> Track Progress</h3>
               <p style={{ marginTop: "10px" }}>
                 Monitor important changes and milestones over time.
               </p>
             </div>
 
             <div className="card">
-              <h3>🔍 Recognise Patterns</h3>
+              <h3> Recognise Patterns</h3>
               <p style={{ marginTop: "10px" }}>
                 Identify recurring behaviours, triggers, and routines.
               </p>
             </div>
 
             <div className="card">
-              <h3>💡 Learn & Understand</h3>
+              <h3> Learn & Understand</h3>
               <p style={{ marginTop: "10px" }}>
                 Learn practical ways to better understand and respond
                 to different situations.
@@ -92,7 +92,7 @@ export default function AboutUs() {
             </div>
 
             <div className="card">
-              <h3>🤝 Support Parents</h3>
+              <h3> Support Parents</h3>
               <p style={{ marginTop: "10px" }}>
                 Help parents approach everyday challenges with greater
                 confidence and understanding.
