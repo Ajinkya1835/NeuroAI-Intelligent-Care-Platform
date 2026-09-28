@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeuroAI</title>
+<style>
+:root{--bg:#f6f8f7;--card:#fff;--ink:#22302c;--mut:#6b7a75;--pri:#3f8f7b;--line:#e2e8e5;--red:#c0392b}
+@media(prefers-color-scheme:dark){:root{--bg:#141b19;--card:#1d2724;--ink:#e6efeb;--mut:#93a39d;--line:#2c3935}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0}
+main{max-width:860px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+input,textarea,select{width:100%;padding:10px;margin:4px 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+button{background:var(--pri);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;cursor:pointer}
+button.ghost{background:none;color:var(--pri);border:1px solid var(--pri)}
+button.sos{background:var(--red);font-weight:600}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:600px){.row{grid-template-columns:1fr}}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.tabs button{background:var(--card);color:var(--ink);border:1px solid var(--line)}.tabs .on{background:var(--pri);color:#fff}
+small,.mut{color:var(--mut)}.err{color:var(--red)}
+dialog{border-radius:14px;border:1px solid var(--line);max-width:460px;background:var(--card);color:var(--ink)}
+</style></head><body>
+<header><b>🧠 NeuroAI</b><span><button class="sos" id="sos" hidden>Emergency</button> <button class="ghost" id="out" hidden>Sign out</button></span></header>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+<script>
+const $=s=>document.querySelector(s), app=$('#app'); let tok=localStorage.tok, user=JSON.parse(localStorage.user||'null'), child=null, tab='log';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(p,m='GET',b){const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',...(tok&&{Authorization:'Bearer '+tok})},body:b&&JSON.stringify(b)});
+  const d=await r.json().catch(()=>({}));if(r.status===401&&tok){signout();}if(!r.ok)throw new Error(d.error||'Request failed');return d;}
+const form=f=>Object.fromEntries(new FormData(f));
+function signout(){localStorage.clear();tok=user=child=null;render();}
+$('#out').onclick=signout;
+$('#sos').onclick=async()=>{
+  let c=[];if(child)try{c=await api(`/children/${child.id}/contacts`)}catch{}
+  $('#dlg').innerHTML=`<h3>Emergency</h3><p><b>If your child is in immediate danger, call your local emergency number now</b> (India: 112). NeuroAI does not replace emergency services or medical care.</p>
+  ${c.map(x=>`<p>${esc(x.name)} <small>${esc(x.relation)}</small><br><a href="tel:${esc(x.phone)}">📞 ${esc(x.phone)}</a></p>`).join('')||'<p class="mut">No saved contacts yet.</p>'}
+  <button onclick="dlg.close()">Close</button>`;$('#dlg').showModal();};
+function render(){
+  $('#out').hidden=$('#sos').hidden=!tok;
+  if(!tok)return authView(); child?childView():listView();
+}
+function authView(){
+  app.innerHTML=`<div class="card"><h2>Welcome</h2><form id="f"><label>Name<input name="name" placeholder="(register only)"></label>
+  <label>Email<input name="email" type="email" required></label><label>Password (8+ chars)<input name="password" type="password" required></label>
+  <label>I am a<select name="role"><option value="parent">Parent</option><option value="therapist">Therapist</option></select></label>
+  <button>Sign in</button> <button type="button" class="ghost" id="reg">Register</button><p class="err" id="e"></p></form></div>`;
+  const go=async p=>{try{const d=await api(p,'POST',form($('#f')));tok=d.token;user=d.user;localStorage.tok=tok;localStorage.user=JSON.stringify(user);render();}catch(e){$('#e').textContent=e.message}};
+  $('#f').onsubmit=e=>{e.preventDefault();go('/login')};$('#reg').onclick=()=>go('/register');
+}
+async function listView(){
+  const kids=await api('/children');
+  app.innerHTML=`<h2>Hello, ${esc(user.name)} <small>(${user.role})</small></h2>
+  ${kids.map(k=>`<div class="card"><b>${esc(k.name)}</b> <small>born ${esc(k.dob)}</small> <button class="ghost" data-id="${k.id}">Open</button></div>`).join('')||`<p class="mut">${user.role==='parent'?'Add your first child below.':'No children have shared access with you yet. Ask a parent to grant access using your email.'}</p>`}
+  ${user.role==='parent'?`<div class="card"><h3>Add child</h3><form id="c"><input name="name" placeholder="Name" required><input name="dob" type="date" required>
+  <input name="likes" placeholder="Likes / interests"><input name="triggers" placeholder="Known triggers"><input name="calming" placeholder="What calms them"><button>Save</button></form></div>`:''}`;
+  app.querySelectorAll('[data-id]').forEach(b=>b.onclick=async()=>{child=await api('/children/'+b.dataset.id);tab='log';render();});
+  if($('#c'))$('#c').onsubmit=async e=>{e.preventDefault();const f=form(e.target);await api('/children','POST',{name:f.name,dob:f.dob,profile:{likes:f.likes,triggers:f.triggers,calming:f.calming}});listView();};
+}
+async function childView(){
+  const owner=user.role==='parent',tabs=[['log','Episodes'],['tl','Timeline'],['prog','Progress'],['goals','Goals'],['rout','Routine'],['act','Activities'],['pat','Patterns'],['notes',owner?'Notes':'Observations'],...(owner?[['learn','Learn'],['chat','Ask AI'],['emg','Emergency contacts'],['share','Sharing']]:[])];
+  app.innerHTML=`<button class="ghost" id="back">← Back</button><h2>${esc(child.name)}</h2><div class="tabs">${tabs.map(t=>`<button class="${t[0]===tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('')}</div><div id="body"></div>`;
+  $('#back').onclick=()=>{child=null;render()};app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;childView()});
+  const B=$('#body'),id=child.id,reload=()=>childView();
+  if(tab==='log'){const eps=await api(`/children/${id}/episodes`);
+    B.innerHTML=(owner?`<div class="card"><h3>Log an episode</h3><form id="f"><div class="row"><label>When<input name="ts" type="datetime-local" required></label><label>Intensity (1-5)<input name="intensity" type="number" min="1" max="5" required></label>
+    <label>Location<input name="location"></label><label>Activity<input name="activity"></label><label>Possible trigger<input name="trigger"></label><label>Duration (min)<input name="duration" type="number"></label></div>
+    <label>Before<textarea name="before" placeholder="What happened before? Sleep, hunger, routine changes…"></textarea></label><label>During<textarea name="during"></textarea></label>
+    <label>After<textarea name="after" placeholder="Recovery, behaviour afterwards"></textarea></label><label>What helped<input name="helped"></label><button>Save</button><p class="err" id="e"></p></form></div>`:'')+
+    eps.map(e=>`<div class="card"><b>${new Date(e.ts).toLocaleString()}</b> · intensity ${e.intensity}/5 · ${e.duration} min<br><small>${esc(e.location)} · ${esc(e.activity)} · trigger: ${esc(e.trigger_)}</small>
+    <p><b>Before:</b> ${esc(e.before_)}<br><b>During:</b> ${esc(e.during_)}<br><b>After:</b> ${esc(e.after_)}<br><b>Helped:</b> ${esc(e.helped)}</p></div>`).join('')||'<p class="mut">No episodes recorded.</p>';
+    if($('#f'))$('#f').onsubmit=async ev=>{ev.preventDefault();try{await api(`/children/${id}/episodes`,'POST',form(ev.target));reload()}catch(x){$('#e').textContent=x.message}};}
+  if(tab==='pat'){const p=await api(`/children/${id}/patterns`);
+    B.innerHTML=`<div class="card"><h3>Pattern insights</h3>${p.insights.length?p.insights.map(i=>`<p>• ${esc(i)}</p>`).join(''):`<p class="mut">Log at least 3 episodes (with repeated details) to see patterns. Recorded so far: ${p.total}.</p>`}<small>${esc(p.disclaimer)}</small></div>`;}
+  if(tab==='notes'){const n=await api(`/children/${id}/notes`);
+    B.innerHTML=`<div class="card"><form id="f"><textarea name="text" required placeholder="${owner?'Add a note':'Add a professional observation or recommendation'}"></textarea><button>Add</button></form></div>`+
+    n.map(x=>`<div class="card">${esc(x.text)}<br><small>${esc(x.author)} · ${new Date(x.ts).toLocaleString()}</small></div>`).join('');
+    $('#f').onsubmit=async ev=>{ev.preventDefault();await api(`/children/${id}/notes`,'POST',form(ev.target));reload()};}
+  if(tab==='emg'){const c=await api(`/children/${id}/contacts`);
+    B.innerHTML=`<div class="card"><form id="f"><div class="row"><input name="name" placeholder="Name" required><input name="phone" placeholder="Phone" required></div><input name="relation" placeholder="Relationship (guardian, therapist, doctor…)"><button>Add contact</button></form></div>`+
+    c.map(x=>`<div class="card">${esc(x.name)} · <a href="tel:${esc(x.phone)}">${esc(x.phone)}</a> <small>${esc(x.relation)}</small></div>`).join('');
+    $('#f').onsubmit=async ev=>{ev.preventDefault();await api(`/children/${id}/contacts`,'POST',form(ev.target));reload()};}
+  const H=(f,b)=>`<div class="card"><form id="f">${f.map(x=>x[2]==='ta'?`<textarea name="${x[0]}" placeholder="${x[1]}"></textarea>`:`<input name="${x[0]}" placeholder="${x[1]}" type="${x[2]||'text'}" ${x[3]||''}>`).join('')}<button>${b}</button><p class="err" id="e"></p></form></div>`;
+  const sub=fn=>{$('#f').onsubmit=async ev=>{ev.preventDefault();try{await fn(form(ev.target));reload()}catch(x){$('#e').textContent=x.message}}};
+  const P=p=>`/children/${id}/${p}`;
+  if(tab==='tl'){const t=await api(P('timeline'));B.innerHTML=t.map(x=>`<div class="card"><small>${new Date(x.ts).toLocaleString()} · ${x.type}</small><br>${esc(x.text)}</div>`).join('')||'<p class="mut">Nothing yet.</p>';}
+  if(tab==='prog'){const p=await api(P('progress')),areas=[...new Set(p.map(x=>x.area))];
+    B.innerHTML=(owner?H([['area','Area (communication, social, emotional, learning, motor, daily living, independence)','text','required list="ar"'],['score','Score 1-5','number','min=1 max=5 required'],['obs','Observation','ta']],'Add record')+'<datalist id="ar"><option>communication<option>social<option>emotional<option>learning<option>motor<option>daily living<option>independence</datalist>':'')+
+    areas.map(a=>{const d=p.filter(x=>x.area===a).reverse(),pts=d.map((x,i)=>`${10+i*(180/Math.max(d.length-1,1))},${45-(x.score-1)*10}`).join(' '),ch=d.at(-1).score-d[0].score;
+      return `<div class="card"><b>${esc(a)}</b> <small>latest ${d.at(-1).score}/5 · ${d.length} records${d.length>1?` · ${ch>=0?'+':''}${ch} since first`:''}</small><svg viewBox="0 0 200 50" width="100%" height="60"><polyline fill="none" stroke="#3f8f7b" stroke-width="2" points="${pts}"/></svg><small>${esc(d.at(-1).obs)}</small></div>`}).join('');
+    if(owner)sub(f=>api(P('progress'),'POST',f));}
+  if(tab==='goals'){const [g,m]=await Promise.all([api(P('goals')),api(P('milestones'))]);
+    B.innerHTML=H([['title','New goal','text','required'],['area','Area (e.g. communication)'],['term','Short-term or long-term']],'Add goal')+
+    g.map(x=>`<div class="card"><b>${esc(x.title)}</b> <small>${esc(x.area)} · ${esc(x.term)} · added by ${esc(x.by)}</small><br><input type="range" min="0" max="100" step="10" value="${x.progress}" data-g="${x.id}"> ${x.progress}%</div>`).join('')+
+    `<h3>Milestones</h3>${owner?'<button class="ghost" id="ms">+ Record milestone</button>':''}`+m.map(x=>`<div class="card">🏅 ${esc(x.title)} <small>${new Date(x.ts).toLocaleDateString()}</small></div>`).join('');
+    sub(f=>api(P('goals'),'POST',f));
+    app.querySelectorAll('[data-g]').forEach(r=>r.onchange=async()=>{await api(P('goals/'+r.dataset.g),'PATCH',{progress:r.value});reload()});
+    if($('#ms'))$('#ms').onclick=async()=>{const t=prompt('Milestone');if(t){await api(P('milestones'),'POST',{title:t});reload()}};}
+  if(tab==='rout'){const r=await api(P('routines'));
+    B.innerHTML=(owner?H([['title','Routine step (e.g. Breakfast)','text','required'],['time','Time','time']],'Add step'):'')+
+    r.map(x=>`<div class="card"><label><input type="checkbox" style="width:auto" data-c="${x.id}" ${x.done?'checked':''} ${owner?'':'disabled'}> <b>${esc(x.title)}</b> <small>${esc(x.time)}</small></label><br><small>Last 7 days: ${x.rate}% completed${x.note?` · today: ${esc(x.note)}`:''}</small>${owner?`<br><button class="ghost" data-n="${x.id}">Note a deviation</button>`:''}</div>`).join('')||'<p class="mut">No routine yet.</p>';
+    if(owner)sub(f=>api(P('routines'),'POST',f));
+    app.querySelectorAll('[data-c]').forEach(b=>b.onchange=async()=>{await api(P(`routines/${b.dataset.c}/log`),'POST',{done:b.checked});reload()});
+    app.querySelectorAll('[data-n]').forEach(b=>b.onclick=async()=>{const n=prompt('What was different today?');if(n){await api(P(`routines/${b.dataset.n}/log`),'POST',{done:app.querySelector(`[data-c="${b.dataset.n}"]`).checked,note:n});reload()}});}
+  if(tab==='act'){const a=await api(P('activities'));
+    B.innerHTML=a.map(x=>`<div class="card"><b>${esc(x.title)}</b> <small>${esc(x.area)} · ${x.dur} min · from age ${x.min_age}</small><p>${esc(x.desc)}</p><small>Materials: ${esc(x.materials)}<br>Sensory: ${esc(x.sensory)}</small><br><small class="mut">Why: ${x.reasons.map(esc).join(' · ')}</small><br>${owner?['completed','enjoyed','helpful','difficult','skipped','not_helpful'].map(f=>`<button class="ghost" data-a="${x.id}" data-f="${f}">${f.replace('_',' ')}</button>`).join(' '):''}</div>`).join('')||'<p class="mut">No activities for this age yet.</p>';
+    app.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{await api(P(`activities/${b.dataset.a}/feedback`),'POST',{fb:b.dataset.f});reload()});}
+  if(tab==='learn'){let rs=await api('/resources');B.innerHTML='<input id="q" placeholder="Search resources…"><div id="rs"></div>';
+    const draw=()=>{const q=$('#q').value.toLowerCase();$('#rs').innerHTML=rs.filter(r=>(r.title+r.body+r.cat).toLowerCase().includes(q)).map(r=>`<div class="card"><b>${esc(r.title)}</b> <small>${esc(r.cat)}</small><p>${esc(r.body)}</p><button class="ghost" data-k="${r.id}" data-p="fav">${r.fav?'★ Saved':'☆ Save'}</button> <button class="ghost" data-k="${r.id}" data-p="read">${r.read?'✓ Read':'Mark read'}</button></div>`).join('');
+      app.querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const r=rs.find(x=>x.id==b.dataset.k),p=b.dataset.p;r[p]=r[p]?0:1;await api('/resources/'+r.id,'POST',{[p]:r[p]});draw()})};
+    $('#q').oninput=draw;draw();}
+  if(tab==='chat'){B.innerHTML=`<div class="card"><div id="log"></div><form id="f"><input name="m" placeholder="Ask about ${esc(child.name)}'s activities, routine, patterns…" required><button>Send</button></form><small>AI support only. Not medical advice or a substitute for professionals.</small></div>`;
+    $('#f').onsubmit=async ev=>{ev.preventDefault();const m=ev.target.m.value;ev.target.m.value='';const L=$('#log');L.innerHTML+=`<p><b>You:</b> ${esc(m)}</p>`;try{const d=await api(P('chat'),'POST',{message:m});L.innerHTML+=`<p><b>NeuroAI:</b> ${esc(d.reply)}</p>`}catch(x){L.innerHTML+=`<p class="err">${esc(x.message)}</p>`}};}
+  if(tab==='share'){const g=await api(`/children/${id}/grants`);
+    B.innerHTML=`<div class="card"><p class="mut">Therapists you add can view this child's data and add observations. Remove access any time.</p><form id="f"><input name="email" type="email" placeholder="Therapist's registered email" required><button>Grant access</button><p class="err" id="e"></p></form></div>`+
+    g.map(x=>`<div class="card">${esc(x.name)} <small>${esc(x.email)}</small> <button class="ghost" data-r="${x.id}">Revoke</button></div>`).join('');
+    $('#f').onsubmit=async ev=>{ev.preventDefault();try{await api(`/children/${id}/grants`,'POST',form(ev.target));reload()}catch(x){$('#e').textContent=x.message}};
+    app.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{await api(`/children/${id}/grants/${b.dataset.r}`,'DELETE');reload()});}
+}
+render();
+</script></body></html>
