@@ -6,6 +6,7 @@ const {
 } = require('./models');
 const registerAuth = require('./auth');
 const { runSeed } = require('./seed');
+const { seedPeter } = require('./seedPeter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,9 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/neuroai')
     // Creates only what is missing, never overwrites, so data survives restarts.
     if (process.env.AUTO_SEED !== 'false') {
       try { await runSeed(); } catch (e) { console.error('Seed failed:', e.message); }
+      if (process.env.SEED_PETER !== 'false') {
+        try { await seedPeter(); } catch (e) { console.error('Peter seed failed:', e.message); }
+      }
     }
   })
   .catch(err => console.error('MongoDB connection error:', err));
@@ -295,6 +299,9 @@ app.post('/api/ai/chat', async (req, res) => {
   }
 });
 
+require('./profile')(app);
+require('./insights')(app);
+require('./therapist')(app);
 require('./learning')(app);
 require('./teaching')(app);
 

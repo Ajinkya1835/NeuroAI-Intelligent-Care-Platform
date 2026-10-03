@@ -1,19 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Home, AlertTriangle, Calendar, Activity, Award, Users, Pencil,
-  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap, LogOut, Target, Phone, Mail
+  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap, LogOut, Target, Phone, Mail, UserCircle
 } from 'lucide-react';
 import { API, authFetch, getSession, logout, type SessionUser } from './lib/auth';
 import LearningHub from './components/learning/LearningHub';
 import LearningSummaryCard from './components/learning/LearningSummaryCard';
 import TeachingHub from './components/teaching/TeachingHub';
 import TeachingSummaryCard from './components/teaching/TeachingSummaryCard';
+import ProfileHub from './components/profile/ProfileHub';
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'profile', label: 'Profile', icon: UserCircle },
   { id: 'logger', label: 'Episodes', icon: AlertTriangle },
   { id: 'routines', label: 'Routines', icon: Calendar },
   { id: 'insights', label: 'Patterns', icon: Activity },
@@ -90,6 +92,8 @@ export default function NeuroAIDashboard() {
   const [toast, setToast] = useState('');
 
   const [child, setChild] = useState<any>(null);
+  const [kidList, setKidList] = useState<any[]>([]);
+  const activeRef = useRef('');
   const [timeline, setTimeline] = useState<any[]>([]);
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [patterns, setPatterns] = useState<any>({ avgIntensity: 0, totalEpisodes: 0, triggerCounts: [], locationCounts: [], routineSuccessRate: 0 });
@@ -122,7 +126,9 @@ export default function NeuroAIDashboard() {
     try {
       const kids = await api('/api/children');
       if (!kids.length) { setStatus('empty'); return; }
-      const c = kids[0];
+      setKidList(kids);
+      const c = kids.find((k: any) => k._id === activeRef.current) || kids[0];
+      activeRef.current = c._id;
       setChild(c);
       setChat((p) => (p.length === 1 ? [{ sender: 'ai', text: `Hi! Ask me about ${c.name}'s episodes, triggers, routines or how to use the app.` }] : p));
       const id = c._id;
@@ -228,9 +234,17 @@ export default function NeuroAIDashboard() {
             <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center">🧠</div>
             <div>
               <div className="font-bold leading-tight">NeuroAI</div>
-              <div className="text-xs text-slate-500 leading-tight">
-                {child ? `${child.name}, ${child.age} yrs` : 'Care Suite'}
-              </div>
+              {kidList.length > 1 ? (
+                <select value={child?._id || ''} aria-label="Choose child"
+                  onChange={(e) => { activeRef.current = e.target.value; setInsight(null); load(); }}
+                  className="text-xs text-slate-600 bg-transparent border border-slate-200 rounded px-1 py-0.5 mt-0.5">
+                  {kidList.map((k) => <option key={k._id} value={k._id}>{k.name}, {k.age} yrs</option>)}
+                </select>
+              ) : (
+                <div className="text-xs text-slate-500 leading-tight">
+                  {child ? `${child.name}, ${child.age} yrs` : 'Care Suite'}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -479,6 +493,8 @@ export default function NeuroAIDashboard() {
 
           {/* LEARN */}
           {child && child.parentId && !isTherapist && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
+
+          {child && tab === 'profile' && <ProfileHub key={child._id} childId={child._id} />}
 
           {child && child.parentId && tab === 'teach' && <TeachingHub child={child} toast={say} />}
 
