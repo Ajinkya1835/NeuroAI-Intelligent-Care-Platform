@@ -1,3 +1,5 @@
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
 export default function Hero() {
   return (
     <section className="hero">
@@ -11,9 +13,14 @@ export default function Hero() {
 
         </p>
 
-        <a href="/about" className="btn-primary">
-          Explore me 
-        </a>
+        <div className="hero-actions">
+          <a href={`${APP_URL}/login`} className="btn-primary">
+            Open Care App
+          </a>
+          <a href="/about" className="btn-secondary">
+            Explore NeuroAI
+          </a>
+        </div>
       </div>
     </section>
   );

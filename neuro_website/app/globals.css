@@ -304,6 +304,13 @@ img {
   line-height: 1.7;
 }
 
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
 /* Hero button */
 .hero .btn-primary {
@@ -313,6 +320,16 @@ img {
   padding: 11px 24px;
 
   border-radius: 6px;
+}
+
+.hero .btn-secondary {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.hero .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
 .hero .btn-primary:hover {
