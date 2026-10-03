@@ -2,8 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const {
-  Child, Episode, Routine, Note, Activity, ActivityFeedback, Progress, Milestone
+  Child, Episode, Routine, Note, Activity, ActivityFeedback, Progress, Milestone, Goal, Contact
 } = require('./models');
+const registerAuth = require('./auth');
+const { runSeed } = require('./seed');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,11 +13,20 @@ const OLLAMA_URL = process.env.OLLAMA_URL || ''; // e.g. http://host:11434/api/g
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
 const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
-app.use(cors({ origin: ALLOWED_ORIGIN }));
+app.use(cors({ origin: ALLOWED_ORIGIN.split(',').map(o => o.trim()) }));
 app.use(express.json({ limit: '100kb' }));
 
+// login + token check for every /api route (except /api/health and /api/auth/login)
+registerAuth(app);
+
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/neuroai')
-  .then(() => console.log('MongoDB connected'))
+  .then(async () => {
+    console.log('MongoDB connected');
+    // Creates only what is missing, never overwrites, so data survives restarts.
+    if (process.env.AUTO_SEED !== 'false') {
+      try { await runSeed(); } catch (e) { console.error('Seed failed:', e.message); }
+    }
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // ---------- helpers ----------
@@ -72,9 +83,11 @@ async function askOllama(prompt) {
 }
 
 // ---------- routes ----------
-app.get('/api/children', async (_req, res) => {
+app.get('/api/children', async (req, res) => {
   try {
-    const children = await Child.find().lean();
+    // parents see their own children, therapists see the children they were granted
+    const filter = req.user.role === 'parent' ? { parentId: req.user.id } : { grants: req.user.id };
+    const children = await Child.find(filter).sort({ name: 1 }).lean();
     res.json(children.map(c => ({ _id: c._id, name: c.name, age: ageFrom(c.dob), parentId: c.parentId })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -142,9 +155,15 @@ app.get('/api/children/:id/notes', validateChild, async (req, res) => {
 
 app.post('/api/children/:id/notes', validateChild, async (req, res) => {
   try {
-    const { author, authorRole, text } = req.body;
-    if (!author || !text) return res.status(400).json({ error: 'author and text required' });
-    res.status(201).json(await Note.create({ childId: req.params.id, author, authorRole, text }));
+    // author comes from the login, not from the request body
+    const text = String(req.body.text || '').trim();
+    if (!text) return res.status(400).json({ error: 'text required' });
+    res.status(201).json(await Note.create({
+      childId: req.params.id,
+      author: req.user.name,
+      authorRole: req.user.role === 'therapist' ? 'Therapist' : 'Parent',
+      text
+    }));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
@@ -156,6 +175,31 @@ app.get('/api/children/:id/team', validateChild, async (req, res) => {
     if (!child) return res.status(404).json({ error: 'Not found' });
     res.json({ parent: child.parentId, therapists: child.grants });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// goals: "current" is derived from the latest Progress entry in the same area,
+// so it can never disagree with the progress timeline
+app.get('/api/children/:id/goals', validateChild, async (req, res) => {
+  try {
+    const [goals, progress] = await Promise.all([
+      Goal.find({ childId: req.params.id }).lean(),
+      Progress.find({ childId: req.params.id }).sort({ ts: 1 }).lean()
+    ]);
+    res.json(goals.map(g => {
+      const inArea = progress.filter(p => p.area === g.area && typeof p.score === 'number');
+      const latest = inArea[inArea.length - 1];
+      return {
+        _id: g._id, area: g.area, title: g.title, targetScore: g.targetScore,
+        currentScore: latest ? latest.score : 0,
+        history: inArea.slice(-6).map(p => ({ ts: p.ts, score: p.score }))
+      };
+    }));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/children/:id/contacts', validateChild, async (req, res) => {
+  try { res.json(await Contact.find({ childId: req.params.id }).sort({ role: 1 })); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/children/:id/routines', validateChild, async (req, res) => {

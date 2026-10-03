@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Home, AlertTriangle, Calendar, Activity, Award, Users, Pencil,
-  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap
+  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap, LogOut, Target, Phone, Mail
 } from 'lucide-react';
+import { API, authFetch, getSession, logout, type SessionUser } from './lib/auth';
 import LearningHub from './components/learning/LearningHub';
 import LearningSummaryCard from './components/learning/LearningSummaryCard';
 import TeachingHub from './components/teaching/TeachingHub';
 import TeachingSummaryCard from './components/teaching/TeachingSummaryCard';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -20,7 +20,7 @@ const TABS = [
   { id: 'activities', label: 'Activities', icon: Award },
   { id: 'learn', label: 'Learn', icon: GraduationCap },
   { id: 'teach', label: 'Teach', icon: Pencil },
-  { id: 'therapist', label: 'Therapist', icon: Users },
+  { id: 'therapist', label: 'Care team', icon: Users },
 ];
 
 const BEHAVIORS = ['Covering ears', 'Crying', 'Screaming', 'Hitting', 'Running away', 'Shutting down', 'Rocking'];
@@ -28,7 +28,7 @@ const CALMING = ['Weighted Blanket', 'Noise Canceling Headphones', 'Deep Breathi
 const CHAT_PRESETS = ['Top triggers?', 'When do episodes happen?', 'Latest episode?', 'Pending routines?', 'Therapist notes?', 'How do I log an episode?'];
 
 const api = async (path: string, init?: RequestInit) => {
-  const res = await fetch(`${API}${path}`, init);
+  const res = await authFetch(path, init);
   if (!res.ok) throw new Error(`${res.status} ${path}`);
   return res.json();
 };
@@ -82,6 +82,8 @@ function Chips({ options, value, onChange }: { options: string[]; value: string[
 }
 
 export default function NeuroAIDashboard() {
+  const router = useRouter();
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [tab, setTab] = useState('dashboard');
   const [status, setStatus] = useState<'loading' | 'ok' | 'error' | 'empty'>('loading');
   const [errMsg, setErrMsg] = useState('');
@@ -95,6 +97,8 @@ export default function NeuroAIDashboard() {
   const [activities, setActivities] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [team, setTeam] = useState<any>({ parent: null, therapists: [] });
+  const [goals, setGoals] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [insight, setInsight] = useState<{ text: string; source: string } | null>(null);
 
   const [logOpen, setLogOpen] = useState(false);
@@ -105,12 +109,11 @@ export default function NeuroAIDashboard() {
   const [sosOpen, setSosOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chat, setChat] = useState<{ sender: string; text: string }[]>([
-    { sender: 'ai', text: "Hi! Ask me about Alex's episodes, triggers, routines or how to use the app." },
+    { sender: 'ai', text: "Hi! Ask me about your child's episodes, triggers, routines or how to use the app." },
   ]);
   const [chatInput, setChatInput] = useState('');
 
   const [noteText, setNoteText] = useState('');
-  const [noteAs, setNoteAs] = useState<'Parent' | 'Therapist'>('Parent');
 
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
@@ -121,8 +124,9 @@ export default function NeuroAIDashboard() {
       if (!kids.length) { setStatus('empty'); return; }
       const c = kids[0];
       setChild(c);
+      setChat((p) => (p.length === 1 ? [{ sender: 'ai', text: `Hi! Ask me about ${c.name}'s episodes, triggers, routines or how to use the app.` }] : p));
       const id = c._id;
-      const [t, e, p, r, a, n, tm] = await Promise.all([
+      const [t, e, p, r, a, n, tm, g, ct] = await Promise.all([
         api(`/api/children/${id}/timeline`),
         api(`/api/children/${id}/episodes`),
         api(`/api/children/${id}/patterns`),
@@ -130,9 +134,11 @@ export default function NeuroAIDashboard() {
         api('/api/activities'),
         api(`/api/children/${id}/notes`),
         api(`/api/children/${id}/team`),
+        api(`/api/children/${id}/goals`),
+        api(`/api/children/${id}/contacts`),
       ]);
       setTimeline(t); setEpisodes(e); setPatterns(p); setRoutines(r);
-      setActivities(a); setNotes(n); setTeam(tm);
+      setActivities(a); setNotes(n); setTeam(tm); setGoals(g); setContacts(ct);
       setStatus('ok');
       if (!silent) {
         post('/api/ai/analyze', { childId: id })
@@ -145,11 +151,19 @@ export default function NeuroAIDashboard() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // must be logged in; otherwise go to the login page
   useEffect(() => {
+    const s = getSession();
+    if (!s) { router.replace('/login'); return; }
+    setUser(s.user);
+  }, [router]);
+
+  useEffect(() => { if (user) load(); }, [user, load]);
+  useEffect(() => {
+    if (!user) return;
     const t = setInterval(() => load(true), 30000);
     return () => clearInterval(t);
-  }, [load]);
+  }, [user, load]);
 
   const saveEpisode = async () => {
     if (!child) return;
@@ -177,11 +191,7 @@ export default function NeuroAIDashboard() {
   const addNote = async () => {
     if (!noteText.trim()) return;
     try {
-      await post(`/api/children/${child._id}/notes`, {
-        author: noteAs === 'Therapist' ? (team.therapists[0]?.name || 'Therapist') : (team.parent?.name || 'Parent'),
-        authorRole: noteAs,
-        text: noteText.trim(),
-      });
+      await post(`/api/children/${child._id}/notes`, { text: noteText.trim() });
       setNoteText(''); say('Note added'); load(true);
     } catch { say('Could not add note'); }
   };
@@ -199,6 +209,12 @@ export default function NeuroAIDashboard() {
       setChat((p) => [...p.slice(0, -1), { sender: 'ai', text: 'Cannot reach the backend. Is it running?' }]);
     }
   };
+
+  if (!user) return <div className="min-h-screen flex items-center justify-center text-sm text-slate-500">Checking your session…</div>;
+
+  const isTherapist = user.role === 'therapist';
+  // the parent lessons are for the parent only
+  const tabs = TABS.filter((t) => !(isTherapist && t.id === 'learn'));
 
   const maxTrig = Math.max(1, ...patterns.triggerCounts.map((t: any) => t.count));
   const maxLoc = Math.max(1, ...patterns.locationCounts.map((t: any) => t.count));
@@ -229,6 +245,13 @@ export default function NeuroAIDashboard() {
               className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
               <ShieldAlert className="w-4 h-4" /> SOS
             </button>
+            <div className="hidden sm:block text-right leading-tight pl-2 ml-1 border-l border-slate-200">
+              <div className="text-sm font-medium">{user.name}</div>
+              <div className="text-[11px] text-slate-500 capitalize">{user.role}</div>
+            </div>
+            <button onClick={logout} title="Log out" aria-label="Log out" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -236,7 +259,7 @@ export default function NeuroAIDashboard() {
       <div className="flex">
         {/* Sidebar (desktop) */}
         <aside className="hidden lg:block w-56 shrink-0 border-r border-slate-200 bg-white min-h-[calc(100vh-61px)] p-3 space-y-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {tabs.map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setTab(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
                 tab === id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}>
@@ -286,7 +309,7 @@ export default function NeuroAIDashboard() {
                 ))}
               </div>
 
-              {child.parentId && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
+              {child.parentId && !isTherapist && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
               {child.parentId && <TeachingSummaryCard childId={child._id} parentId={child.parentId} onOpen={() => setTab('teach')} />}
 
               <Card>
@@ -407,6 +430,28 @@ export default function NeuroAIDashboard() {
                   </Card>
                 ))}
               </div>
+
+              <Card>
+                <h3 className="font-semibold mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-indigo-600" /> Goals</h3>
+                {goals.length === 0 ? <p className="text-sm text-slate-400">No goals set yet.</p> :
+                  <div className="space-y-4">
+                    {goals.map((g) => {
+                      const pct = Math.min(100, Math.round((g.currentScore / (g.targetScore || 100)) * 100));
+                      const reached = g.currentScore >= g.targetScore;
+                      return (
+                        <div key={g._id}>
+                          <div className="flex justify-between gap-3 text-sm mb-1">
+                            <span><span className="font-medium">{g.title}</span> <span className="text-xs text-slate-400">· {g.area}</span></span>
+                            <span className={`shrink-0 ${reached ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>{g.currentScore}/{g.targetScore}{reached ? ' ✓' : ''}</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 rounded-full">
+                            <div className={`h-2 rounded-full ${reached ? 'bg-emerald-500' : 'bg-indigo-400'}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>}
+              </Card>
             </div>
           )}
 
@@ -433,7 +478,7 @@ export default function NeuroAIDashboard() {
           )}
 
           {/* LEARN */}
-          {child && child.parentId && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
+          {child && child.parentId && !isTherapist && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
 
           {child && child.parentId && tab === 'teach' && <TeachingHub child={child} toast={say} />}
 
@@ -459,12 +504,27 @@ export default function NeuroAIDashboard() {
                 </ul>
               </Card>
 
+              {contacts.length > 0 && (
+                <Card>
+                  <h3 className="font-semibold mb-3 text-sm">Contacts</h3>
+                  <ul className="divide-y divide-slate-100">
+                    {contacts.map((c) => (
+                      <li key={c._id} className="py-2.5 flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span>{c.name} <span className="text-slate-400">· {c.role}</span></span>
+                        <span className="flex items-center gap-3 text-xs">
+                          {c.phone && <a href={`tel:${c.phone.replace(/\s/g, '')}`} className="text-indigo-600 flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{c.phone}</a>}
+                          {c.email && <a href={`mailto:${c.email}`} className="text-indigo-600 flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{c.email}</a>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              )}
+
               <Card>
                 <h3 className="font-semibold mb-3 text-sm">Shared notes</h3>
                 <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                  <select value={noteAs} onChange={(e) => setNoteAs(e.target.value as any)} className={`${inputCls} sm:w-36`}>
-                    <option>Parent</option><option>Therapist</option>
-                  </select>
+                  <span className="text-xs text-slate-500 sm:w-36 sm:self-center">Posting as <b>{user.name}</b></span>
                   <input value={noteText} onChange={(e) => setNoteText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addNote()}
                     placeholder="Write a note…" className={inputCls} />
@@ -489,7 +549,7 @@ export default function NeuroAIDashboard() {
 
       {/* Bottom tabs (mobile) */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex">
-        {TABS.map(({ id, label, icon: Icon }) => (
+        {tabs.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex-1 min-w-0 py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
             <Icon className="w-5 h-5" /><span className="max-w-full truncate px-0.5">{label}</span>

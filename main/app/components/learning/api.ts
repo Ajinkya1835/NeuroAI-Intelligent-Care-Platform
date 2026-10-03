@@ -1,10 +1,10 @@
 import type { Overview, Module, ModuleProgress, SubmitResult } from './types';
+import { authFetch } from '../../lib/auth';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in the parent's local time
 
 async function call(path: string, init?: RequestInit) {
-  const res = await fetch(`${API}${path}`, init);
+  const res = await authFetch(path, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `${res.status} ${path}`);
   return data;

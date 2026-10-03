@@ -1,0 +1,1254 @@
+diff --git a/main/app/components/auth/LoginForm.tsx b/main/app/components/auth/LoginForm.tsx
+new file mode 100644
+index 0000000..4019631
+--- /dev/null
++++ b/main/app/components/auth/LoginForm.tsx
+@@ -0,0 +1,113 @@
++'use client';
++
++import React, { useEffect, useState } from 'react';
++import Link from 'next/link';
++import { useRouter } from 'next/navigation';
++import { Heart, Stethoscope, Eye, EyeOff, ArrowLeft } from 'lucide-react';
++import { getSession, login, type Role } from '../../lib/auth';
++
++const COPY: Record<Role, { title: string; sub: string; email: string; icon: typeof Heart; accent: string; button: string }> = {
++  parent: {
++    title: 'Parent login',
++    sub: "Track your child's episodes, routines, learning and worksheets.",
++    email: 'goon@example.com',
++    icon: Heart,
++    accent: 'bg-indigo-600',
++    button: 'bg-indigo-600 hover:bg-indigo-700',
++  },
++  therapist: {
++    title: 'Therapist login',
++    sub: 'Review patterns, progress and notes for the children you support.',
++    email: 'dr.ajinkya@neurocare.com',
++    icon: Stethoscope,
++    accent: 'bg-teal-600',
++    button: 'bg-teal-600 hover:bg-teal-700',
++  },
++};
++
++const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500';
++const SHOW_DEMO = process.env.NEXT_PUBLIC_SHOW_DEMO_HINT !== 'false';
++
++export default function LoginForm({ role }: { role: Role }) {
++  const router = useRouter();
++  const c = COPY[role];
++  const Icon = c.icon;
++  const [email, setEmail] = useState('');
++  const [password, setPassword] = useState('');
++  const [show, setShow] = useState(false);
++  const [busy, setBusy] = useState(false);
++  const [error, setError] = useState('');
++
++  // already logged in? go straight to the app
++  useEffect(() => { if (getSession()) router.replace('/'); }, [router]);
++
++  const submit = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setBusy(true); setError('');
++    try {
++      await login(email.trim(), password, role);
++      router.replace('/');
++    } catch (err: any) {
++      setError(err.message || 'Could not log in.');
++      setBusy(false);
++    }
++  };
++
++  const other: Role = role === 'parent' ? 'therapist' : 'parent';
++
++  return (
++    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
++      <div className="w-full max-w-md">
++        <Link href="/login" className="text-sm text-slate-500 hover:text-slate-700 inline-flex items-center gap-1 mb-4">
++          <ArrowLeft className="w-4 h-4" /> Choose a different login
++        </Link>
++        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
++          <div className="flex items-center gap-3 mb-6">
++            <div className={`w-11 h-11 rounded-xl ${c.accent} text-white flex items-center justify-center`}><Icon className="w-5 h-5" /></div>
++            <div>
++              <h1 className="text-lg font-bold leading-tight">{c.title}</h1>
++              <p className="text-xs text-slate-500">NeuroAI Care Suite</p>
++            </div>
++          </div>
++          <p className="text-sm text-slate-600 mb-5">{c.sub}</p>
++
++          <form onSubmit={submit} className="space-y-4">
++            <label className="block">
++              <span className="text-xs font-medium text-slate-600">Email</span>
++              <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)}
++                placeholder={c.email} className={`${inputCls} mt-1`} />
++            </label>
++            <label className="block">
++              <span className="text-xs font-medium text-slate-600">Password</span>
++              <div className="relative mt-1">
++                <input type={show ? 'text' : 'password'} required autoComplete="current-password" value={password}
++                  onChange={(e) => setPassword(e.target.value)} className={`${inputCls} pr-10`} />
++                <button type="button" onClick={() => setShow(!show)} aria-label={show ? 'Hide password' : 'Show password'}
++                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600">
++                  {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
++                </button>
++              </div>
++            </label>
++
++            {error && <p role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{error}</p>}
++
++            <button type="submit" disabled={busy}
++              className={`w-full ${c.button} disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-semibold`}>
++              {busy ? 'Signing in…' : 'Sign in'}
++            </button>
++          </form>
++
++          {SHOW_DEMO && (
++            <button type="button" onClick={() => { setEmail(c.email); setPassword('password123'); }}
++              className="mt-4 w-full text-xs text-slate-500 hover:text-slate-700 border border-dashed border-slate-300 rounded-lg py-2">
++              Demo account: fill in <b>{c.email}</b>
++            </button>
++          )}
++        </div>
++        <p className="text-center text-xs text-slate-500 mt-4">
++          Not a {role}? <Link href={`/login/${other}`} className="text-indigo-600 font-medium">Use the {other} login</Link>
++        </p>
++      </div>
++    </div>
++  );
++}
+diff --git a/main/app/components/learning/api.ts b/main/app/components/learning/api.ts
+index 5fe0db2..636d634 100644
+--- a/main/app/components/learning/api.ts
++++ b/main/app/components/learning/api.ts
+@@ -1,10 +1,10 @@
+ import type { Overview, Module, ModuleProgress, SubmitResult } from './types';
++import { authFetch } from '../../lib/auth';
+ 
+-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+ const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in the parent's local time
+ 
+ async function call(path: string, init?: RequestInit) {
+-  const res = await fetch(`${API}${path}`, init);
++  const res = await authFetch(path, init);
+   const data = await res.json().catch(() => ({}));
+   if (!res.ok) throw new Error(data.error || `${res.status} ${path}`);
+   return data;
+diff --git a/main/app/components/teaching/api.ts b/main/app/components/teaching/api.ts
+index 30234ef..ef8ca8b 100644
+--- a/main/app/components/teaching/api.ts
++++ b/main/app/components/teaching/api.ts
+@@ -1,11 +1,11 @@
+ import type { Overview, Module, ModuleProgress, Insights, Submission, SubmitResult } from './types';
++import { API, authFetch, withToken } from '../../lib/auth';
+ 
+-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+ const today = () => new Date().toLocaleDateString('en-CA');
+ const q = (values: Record<string, string | undefined>) => Object.entries(values).filter(([, value]) => value).map(([key, value]) => `${key}=${encodeURIComponent(value as string)}`).join('&');
+ 
+ async function call(path: string, init?: RequestInit) {
+-  const response = await fetch(`${API}${path}`, init);
++  const response = await authFetch(path, init);
+   const data = await response.json().catch(() => ({}));
+   if (!response.ok) throw new Error(data.error || `${response.status} ${path}`);
+   return data;
+@@ -19,6 +19,6 @@ export const teachingApi = {
+   history: ({ childId, parentId }: Ids, moduleSlug: string, worksheetId: string): Promise<Submission[]> => call(`/api/teaching/children/${childId}/submissions?${q({ parentId, moduleSlug, worksheetId })}`),
+   submit: (form: FormData): Promise<SubmitResult> => { form.append('day', today()); return call('/api/teaching/submissions', { method: 'POST', body: form }); },
+   remove: (id: string, parentId: string): Promise<{ ok: boolean }> => call(`/api/teaching/submissions/${id}?${q({ parentId })}`, { method: 'DELETE' }),
+-  pdfUrl: (slug: string, worksheetId: string, ids: Ids, inline = false) => `${API}/api/teaching/worksheets/${slug}/${worksheetId}/pdf?${q({ ...ids, inline: inline ? '1' : undefined })}`,
+-  fileUrl: (submissionId: string, parentId: string) => `${API}/api/teaching/submissions/${submissionId}/file?${q({ parentId })}`,
++  pdfUrl: (slug: string, worksheetId: string, ids: Ids, inline = false) => withToken(`${API}/api/teaching/worksheets/${slug}/${worksheetId}/pdf?${q({ ...ids, inline: inline ? '1' : undefined })}`),
++  fileUrl: (submissionId: string, parentId: string) => withToken(`${API}/api/teaching/submissions/${submissionId}/file?${q({ parentId })}`),
+ };
+diff --git a/main/app/lib/auth.ts b/main/app/lib/auth.ts
+new file mode 100644
+index 0000000..38bba93
+--- /dev/null
++++ b/main/app/lib/auth.ts
+@@ -0,0 +1,54 @@
++// Session handling shared by every API call in the app.
++// The token is a JWT issued by POST /api/auth/login and stored in localStorage.
++export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
++
++export type Role = 'parent' | 'therapist';
++export type SessionUser = { id: string; name: string; email: string; role: Role };
++type Session = { token: string; user: SessionUser };
++
++const KEY = 'neuroai.session';
++
++export function getSession(): Session | null {
++  if (typeof window === 'undefined') return null;
++  try {
++    const raw = window.localStorage.getItem(KEY);
++    return raw ? (JSON.parse(raw) as Session) : null;
++  } catch { return null; }
++}
++export const getToken = () => getSession()?.token || '';
++export function saveSession(s: Session) { window.localStorage.setItem(KEY, JSON.stringify(s)); }
++export function clearSession() { try { window.localStorage.removeItem(KEY); } catch {} }
++
++export function logout() {
++  clearSession();
++  window.location.replace('/login');
++}
++
++// fetch() against the backend with the Authorization header attached.
++// A 401 means the session is gone or expired, so send the user back to the login page.
++export async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
++  const headers = new Headers(init.headers || {});
++  const token = getToken();
++  if (token) headers.set('Authorization', `Bearer ${token}`);
++  const res = await fetch(`${API}${path}`, { ...init, headers });
++  if (res.status === 401 && typeof window !== 'undefined' && !path.startsWith('/api/auth/login')) {
++    clearSession();
++    if (!window.location.pathname.startsWith('/login')) window.location.replace('/login');
++  }
++  return res;
++}
++
++// For links the browser opens itself (PDF download / uploaded sheet), which cannot send headers.
++export const withToken = (url: string) => `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(getToken())}`;
++
++export async function login(email: string, password: string, role: Role) {
++  const res = await authFetch('/api/auth/login', {
++    method: 'POST',
++    headers: { 'Content-Type': 'application/json' },
++    body: JSON.stringify({ email, password, role }),
++  });
++  const data = await res.json().catch(() => ({}));
++  if (!res.ok) throw new Error(data.error || 'Could not log in. Is the backend running?');
++  saveSession({ token: data.token, user: data.user });
++  return data.user as SessionUser;
++}
+diff --git a/main/app/login/[role]/page.tsx b/main/app/login/[role]/page.tsx
+new file mode 100644
+index 0000000..7cfd829
+--- /dev/null
++++ b/main/app/login/[role]/page.tsx
+@@ -0,0 +1,15 @@
++'use client';
++
++import Link from 'next/link';
++import LoginForm from '../../components/auth/LoginForm';
++
++export default function RoleLoginPage({ params }: { params: { role: string } }) {
++  if (params.role !== 'parent' && params.role !== 'therapist') {
++    return (
++      <div className="min-h-screen flex items-center justify-center text-sm text-slate-600">
++        Unknown login type. <Link href="/login" className="ml-1 text-indigo-600 underline">Choose a login</Link>
++      </div>
++    );
++  }
++  return <LoginForm role={params.role} />;
++}
+diff --git a/main/app/login/page.tsx b/main/app/login/page.tsx
+new file mode 100644
+index 0000000..339b239
+--- /dev/null
++++ b/main/app/login/page.tsx
+@@ -0,0 +1,40 @@
++'use client';
++
++import React, { useEffect } from 'react';
++import Link from 'next/link';
++import { useRouter } from 'next/navigation';
++import { Heart, Stethoscope, ArrowRight } from 'lucide-react';
++import { getSession } from '../lib/auth';
++
++export default function LoginChooser() {
++  const router = useRouter();
++  useEffect(() => { if (getSession()) router.replace('/'); }, [router]);
++
++  const options = [
++    { role: 'parent', title: "I'm a parent", sub: 'Log episodes, follow routines, learn and teach at home.', icon: Heart, color: 'bg-indigo-600' },
++    { role: 'therapist', title: "I'm a therapist", sub: 'Review patterns and progress, and add shared notes.', icon: Stethoscope, color: 'bg-teal-600' },
++  ];
++
++  return (
++    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
++      <div className="w-full max-w-md space-y-4">
++        <div className="text-center mb-2">
++          <div className="w-12 h-12 mx-auto rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl">🧠</div>
++          <h1 className="text-xl font-bold mt-3">Welcome to NeuroAI</h1>
++          <p className="text-sm text-slate-500">Choose how you want to sign in</p>
++        </div>
++        {options.map(({ role, title, sub, icon: Icon, color }) => (
++          <Link key={role} href={`/login/${role}`}
++            className="flex items-center gap-4 bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-sm rounded-2xl p-5 transition">
++            <div className={`w-11 h-11 rounded-xl ${color} text-white flex items-center justify-center shrink-0`}><Icon className="w-5 h-5" /></div>
++            <div className="flex-1 min-w-0">
++              <div className="font-semibold">{title}</div>
++              <div className="text-xs text-slate-500">{sub}</div>
++            </div>
++            <ArrowRight className="w-4 h-4 text-slate-400" />
++          </Link>
++        ))}
++      </div>
++    </div>
++  );
++}
+diff --git a/main/app/page.tsx b/main/app/page.tsx
+index 13014f6..246ed3b 100644
+--- a/main/app/page.tsx
++++ b/main/app/page.tsx
+@@ -1,17 +1,17 @@
+ 'use client';
+ 
+ import React, { useState, useEffect, useCallback } from 'react';
++import { useRouter } from 'next/navigation';
+ import {
+   Home, AlertTriangle, Calendar, Activity, Award, Users, Pencil,
+-  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap
++  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap, LogOut, Target, Phone, Mail
+ } from 'lucide-react';
++import { API, authFetch, getSession, logout, type SessionUser } from './lib/auth';
+ import LearningHub from './components/learning/LearningHub';
+ import LearningSummaryCard from './components/learning/LearningSummaryCard';
+ import TeachingHub from './components/teaching/TeachingHub';
+ import TeachingSummaryCard from './components/teaching/TeachingSummaryCard';
+ 
+-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+-
+ const TABS = [
+   { id: 'dashboard', label: 'Dashboard', icon: Home },
+   { id: 'logger', label: 'Episodes', icon: AlertTriangle },
+@@ -20,7 +20,7 @@ const TABS = [
+   { id: 'activities', label: 'Activities', icon: Award },
+   { id: 'learn', label: 'Learn', icon: GraduationCap },
+   { id: 'teach', label: 'Teach', icon: Pencil },
+-  { id: 'therapist', label: 'Therapist', icon: Users },
++  { id: 'therapist', label: 'Care team', icon: Users },
+ ];
+ 
+ const BEHAVIORS = ['Covering ears', 'Crying', 'Screaming', 'Hitting', 'Running away', 'Shutting down', 'Rocking'];
+@@ -28,7 +28,7 @@ const CALMING = ['Weighted Blanket', 'Noise Canceling Headphones', 'Deep Breathi
+ const CHAT_PRESETS = ['Top triggers?', 'When do episodes happen?', 'Latest episode?', 'Pending routines?', 'Therapist notes?', 'How do I log an episode?'];
+ 
+ const api = async (path: string, init?: RequestInit) => {
+-  const res = await fetch(`${API}${path}`, init);
++  const res = await authFetch(path, init);
+   if (!res.ok) throw new Error(`${res.status} ${path}`);
+   return res.json();
+ };
+@@ -82,6 +82,8 @@ function Chips({ options, value, onChange }: { options: string[]; value: string[
+ }
+ 
+ export default function NeuroAIDashboard() {
++  const router = useRouter();
++  const [user, setUser] = useState<SessionUser | null>(null);
+   const [tab, setTab] = useState('dashboard');
+   const [status, setStatus] = useState<'loading' | 'ok' | 'error' | 'empty'>('loading');
+   const [errMsg, setErrMsg] = useState('');
+@@ -95,6 +97,8 @@ export default function NeuroAIDashboard() {
+   const [activities, setActivities] = useState<any[]>([]);
+   const [notes, setNotes] = useState<any[]>([]);
+   const [team, setTeam] = useState<any>({ parent: null, therapists: [] });
++  const [goals, setGoals] = useState<any[]>([]);
++  const [contacts, setContacts] = useState<any[]>([]);
+   const [insight, setInsight] = useState<{ text: string; source: string } | null>(null);
+ 
+   const [logOpen, setLogOpen] = useState(false);
+@@ -105,12 +109,11 @@ export default function NeuroAIDashboard() {
+   const [sosOpen, setSosOpen] = useState(false);
+   const [chatOpen, setChatOpen] = useState(false);
+   const [chat, setChat] = useState<{ sender: string; text: string }[]>([
+-    { sender: 'ai', text: "Hi! Ask me about Alex's episodes, triggers, routines or how to use the app." },
++    { sender: 'ai', text: "Hi! Ask me about your child's episodes, triggers, routines or how to use the app." },
+   ]);
+   const [chatInput, setChatInput] = useState('');
+ 
+   const [noteText, setNoteText] = useState('');
+-  const [noteAs, setNoteAs] = useState<'Parent' | 'Therapist'>('Parent');
+ 
+   const say = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
+ 
+@@ -121,8 +124,9 @@ export default function NeuroAIDashboard() {
+       if (!kids.length) { setStatus('empty'); return; }
+       const c = kids[0];
+       setChild(c);
++      setChat((p) => (p.length === 1 ? [{ sender: 'ai', text: `Hi! Ask me about ${c.name}'s episodes, triggers, routines or how to use the app.` }] : p));
+       const id = c._id;
+-      const [t, e, p, r, a, n, tm] = await Promise.all([
++      const [t, e, p, r, a, n, tm, g, ct] = await Promise.all([
+         api(`/api/children/${id}/timeline`),
+         api(`/api/children/${id}/episodes`),
+         api(`/api/children/${id}/patterns`),
+@@ -130,9 +134,11 @@ export default function NeuroAIDashboard() {
+         api('/api/activities'),
+         api(`/api/children/${id}/notes`),
+         api(`/api/children/${id}/team`),
++        api(`/api/children/${id}/goals`),
++        api(`/api/children/${id}/contacts`),
+       ]);
+       setTimeline(t); setEpisodes(e); setPatterns(p); setRoutines(r);
+-      setActivities(a); setNotes(n); setTeam(tm);
++      setActivities(a); setNotes(n); setTeam(tm); setGoals(g); setContacts(ct);
+       setStatus('ok');
+       if (!silent) {
+         post('/api/ai/analyze', { childId: id })
+@@ -145,11 +151,19 @@ export default function NeuroAIDashboard() {
+     }
+   }, []);
+ 
+-  useEffect(() => { load(); }, [load]);
++  // must be logged in; otherwise go to the login page
++  useEffect(() => {
++    const s = getSession();
++    if (!s) { router.replace('/login'); return; }
++    setUser(s.user);
++  }, [router]);
++
++  useEffect(() => { if (user) load(); }, [user, load]);
+   useEffect(() => {
++    if (!user) return;
+     const t = setInterval(() => load(true), 30000);
+     return () => clearInterval(t);
+-  }, [load]);
++  }, [user, load]);
+ 
+   const saveEpisode = async () => {
+     if (!child) return;
+@@ -177,11 +191,7 @@ export default function NeuroAIDashboard() {
+   const addNote = async () => {
+     if (!noteText.trim()) return;
+     try {
+-      await post(`/api/children/${child._id}/notes`, {
+-        author: noteAs === 'Therapist' ? (team.therapists[0]?.name || 'Therapist') : (team.parent?.name || 'Parent'),
+-        authorRole: noteAs,
+-        text: noteText.trim(),
+-      });
++      await post(`/api/children/${child._id}/notes`, { text: noteText.trim() });
+       setNoteText(''); say('Note added'); load(true);
+     } catch { say('Could not add note'); }
+   };
+@@ -200,6 +210,12 @@ export default function NeuroAIDashboard() {
+     }
+   };
+ 
++  if (!user) return <div className="min-h-screen flex items-center justify-center text-sm text-slate-500">Checking your session…</div>;
++
++  const isTherapist = user.role === 'therapist';
++  // the parent lessons are for the parent only
++  const tabs = TABS.filter((t) => !(isTherapist && t.id === 'learn'));
++
+   const maxTrig = Math.max(1, ...patterns.triggerCounts.map((t: any) => t.count));
+   const maxLoc = Math.max(1, ...patterns.locationCounts.map((t: any) => t.count));
+ 
+@@ -229,6 +245,13 @@ export default function NeuroAIDashboard() {
+               className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
+               <ShieldAlert className="w-4 h-4" /> SOS
+             </button>
++            <div className="hidden sm:block text-right leading-tight pl-2 ml-1 border-l border-slate-200">
++              <div className="text-sm font-medium">{user.name}</div>
++              <div className="text-[11px] text-slate-500 capitalize">{user.role}</div>
++            </div>
++            <button onClick={logout} title="Log out" aria-label="Log out" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">
++              <LogOut className="w-4 h-4" />
++            </button>
+           </div>
+         </div>
+       </header>
+@@ -236,7 +259,7 @@ export default function NeuroAIDashboard() {
+       <div className="flex">
+         {/* Sidebar (desktop) */}
+         <aside className="hidden lg:block w-56 shrink-0 border-r border-slate-200 bg-white min-h-[calc(100vh-61px)] p-3 space-y-1">
+-          {TABS.map(({ id, label, icon: Icon }) => (
++          {tabs.map(({ id, label, icon: Icon }) => (
+             <button key={id} onClick={() => setTab(id)}
+               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                 tab === id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}>
+@@ -286,7 +309,7 @@ export default function NeuroAIDashboard() {
+                 ))}
+               </div>
+ 
+-              {child.parentId && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
++              {child.parentId && !isTherapist && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
+               {child.parentId && <TeachingSummaryCard childId={child._id} parentId={child.parentId} onOpen={() => setTab('teach')} />}
+ 
+               <Card>
+@@ -407,6 +430,28 @@ export default function NeuroAIDashboard() {
+                   </Card>
+                 ))}
+               </div>
++
++              <Card>
++                <h3 className="font-semibold mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-indigo-600" /> Goals</h3>
++                {goals.length === 0 ? <p className="text-sm text-slate-400">No goals set yet.</p> :
++                  <div className="space-y-4">
++                    {goals.map((g) => {
++                      const pct = Math.min(100, Math.round((g.currentScore / (g.targetScore || 100)) * 100));
++                      const reached = g.currentScore >= g.targetScore;
++                      return (
++                        <div key={g._id}>
++                          <div className="flex justify-between gap-3 text-sm mb-1">
++                            <span><span className="font-medium">{g.title}</span> <span className="text-xs text-slate-400">· {g.area}</span></span>
++                            <span className={`shrink-0 ${reached ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>{g.currentScore}/{g.targetScore}{reached ? ' ✓' : ''}</span>
++                          </div>
++                          <div className="h-2 bg-slate-100 rounded-full">
++                            <div className={`h-2 rounded-full ${reached ? 'bg-emerald-500' : 'bg-indigo-400'}`} style={{ width: `${pct}%` }} />
++                          </div>
++                        </div>
++                      );
++                    })}
++                  </div>}
++              </Card>
+             </div>
+           )}
+ 
+@@ -433,7 +478,7 @@ export default function NeuroAIDashboard() {
+           )}
+ 
+           {/* LEARN */}
+-          {child && child.parentId && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
++          {child && child.parentId && !isTherapist && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
+ 
+           {child && child.parentId && tab === 'teach' && <TeachingHub child={child} toast={say} />}
+ 
+@@ -459,12 +504,27 @@ export default function NeuroAIDashboard() {
+                 </ul>
+               </Card>
+ 
++              {contacts.length > 0 && (
++                <Card>
++                  <h3 className="font-semibold mb-3 text-sm">Contacts</h3>
++                  <ul className="divide-y divide-slate-100">
++                    {contacts.map((c) => (
++                      <li key={c._id} className="py-2.5 flex flex-wrap items-center justify-between gap-2 text-sm">
++                        <span>{c.name} <span className="text-slate-400">· {c.role}</span></span>
++                        <span className="flex items-center gap-3 text-xs">
++                          {c.phone && <a href={`tel:${c.phone.replace(/\s/g, '')}`} className="text-indigo-600 flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{c.phone}</a>}
++                          {c.email && <a href={`mailto:${c.email}`} className="text-indigo-600 flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{c.email}</a>}
++                        </span>
++                      </li>
++                    ))}
++                  </ul>
++                </Card>
++              )}
++
+               <Card>
+                 <h3 className="font-semibold mb-3 text-sm">Shared notes</h3>
+                 <div className="flex flex-col sm:flex-row gap-2 mb-4">
+-                  <select value={noteAs} onChange={(e) => setNoteAs(e.target.value as any)} className={`${inputCls} sm:w-36`}>
+-                    <option>Parent</option><option>Therapist</option>
+-                  </select>
++                  <span className="text-xs text-slate-500 sm:w-36 sm:self-center">Posting as <b>{user.name}</b></span>
+                   <input value={noteText} onChange={(e) => setNoteText(e.target.value)}
+                     onKeyDown={(e) => e.key === 'Enter' && addNote()}
+                     placeholder="Write a note…" className={inputCls} />
+@@ -489,7 +549,7 @@ export default function NeuroAIDashboard() {
+ 
+       {/* Bottom tabs (mobile) */}
+       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex">
+-        {TABS.map(({ id, label, icon: Icon }) => (
++        {tabs.map(({ id, label, icon: Icon }) => (
+           <button key={id} onClick={() => setTab(id)}
+             className={`flex-1 min-w-0 py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
+             <Icon className="w-5 h-5" /><span className="max-w-full truncate px-0.5">{label}</span>
+diff --git a/neuro_website/app/components/home page components/NavBar.tsx b/neuro_website/app/components/home page components/NavBar.tsx
+index 7a9e1ee..14c5675 100644
+--- a/neuro_website/app/components/home page components/NavBar.tsx	
++++ b/neuro_website/app/components/home page components/NavBar.tsx	
+@@ -1,3 +1,6 @@
++// The care app (main/) hosts the real login pages. Override with NEXT_PUBLIC_APP_URL.
++const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
++
+ const styles = {
+   nav: {
+     width: "100%",
+@@ -89,7 +92,10 @@ export default function Navbar() {
+           </a>
+ 
+           {/* Action Button */}
+-          <a href="/login" style={styles.button}>
++          <a href={`${APP_URL}/login`} style={styles.link}>
++            Log in
++          </a>
++          <a href={`${APP_URL}/login`} style={styles.button}>
+             Get Started
+           </a>
+         </div>
+diff --git a/neuroai-backend/.env.example b/neuroai-backend/.env.example
+index a2bef26..a565cc4 100644
+--- a/neuroai-backend/.env.example
++++ b/neuroai-backend/.env.example
+@@ -2,4 +2,15 @@ PORT=5000
+ MONGO_URI=mongodb://127.0.0.1:27017/neuroai
+ CORS_ORIGIN=http://localhost:3000
+ OLLAMA_URL=http://100.86.196.111:11434/api/generate
+-OLLAMA_MODEL=llama3.2:latest
+\ No newline at end of file
++OLLAMA_MODEL=llama3.2:latest
++
++# --- auth ---
++# Long random string, e.g.  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
++JWT_SECRET=change-me-to-a-long-random-string
++JWT_TTL=7d
++
++# --- seed data ---
++# true (default): on every start, create any missing demo data. Never overwrites existing data.
++AUTO_SEED=true
++# password given to the demo accounts the first time they are created
++SEED_PASSWORD=password123
+diff --git a/neuroai-backend/auth.js b/neuroai-backend/auth.js
+new file mode 100644
+index 0000000..b485dfc
+--- /dev/null
++++ b/neuroai-backend/auth.js
+@@ -0,0 +1,138 @@
++// Authentication + access control for the whole /api surface.
++//
++//  - POST /api/auth/login   email + password (+ optional role) -> JWT
++//  - GET  /api/auth/me      current user (used by the frontend on page load)
++//  - guard                  every other /api route needs a valid token, and the
++//                           child / parent the request touches must belong to the
++//                           logged-in user (parent = owner, therapist = granted).
++const express = require('express');
++const bcrypt = require('bcryptjs');
++const jwt = require('jsonwebtoken');
++const { User, Child, Routine } = require('./models');
++
++const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me';
++const JWT_TTL = process.env.JWT_TTL || '7d';
++if (!process.env.JWT_SECRET) {
++  console.warn('[auth] JWT_SECRET is not set, using an insecure development secret. Set it in .env.');
++}
++
++const OID = /^[0-9a-fA-F]{24}$/;
++const asId = (v) => (typeof v === 'string' && OID.test(v) ? v : null);
++const publicUser = (u) => ({ id: String(u._id), name: u.name, email: u.email, role: u.role });
++
++// ---- tiny in-memory brute-force limiter: 8 failures / 15 min per ip+email ----
++const attempts = new Map();
++const WINDOW = 15 * 60 * 1000;
++const MAX_FAILS = 8;
++function tooMany(key) {
++  const now = Date.now();
++  const list = (attempts.get(key) || []).filter((t) => now - t < WINDOW);
++  attempts.set(key, list);
++  return list.length >= MAX_FAILS;
++}
++const recordFail = (key) => attempts.set(key, [...(attempts.get(key) || []), Date.now()]);
++
++function canAccessChildFor(user) {
++  return (child) => {
++    if (!child) return false;
++    if (user.role === 'parent') return String(child.parentId) === user.id;
++    return (child.grants || []).some((g) => String(g) === user.id);
++  };
++}
++
++async function guard(req, res, next) {
++  try {
++    if (req.path === '/health' || req.path === '/auth/login') return next();
++
++    const header = req.headers.authorization || '';
++    let token = header.startsWith('Bearer ') ? header.slice(7) : null;
++    // PDFs / uploaded sheets are opened as plain links, so GETs may carry ?token=
++    if (!token && req.method === 'GET' && typeof req.query.token === 'string') token = req.query.token;
++    if (!token) return res.status(401).json({ error: 'Please log in.' });
++
++    let payload;
++    try { payload = jwt.verify(token, JWT_SECRET); }
++    catch { return res.status(401).json({ error: 'Your session has expired. Please log in again.' }); }
++
++    const user = await User.findById(payload.sub).select('name email role').lean();
++    if (!user) return res.status(401).json({ error: 'Account no longer exists. Please log in again.' });
++
++    req.user = publicUser(user);
++    req.canAccessChild = canAccessChildFor(req.user);
++
++    // 1) every child this request refers to must be accessible
++    const childIds = new Set();
++    const fromPath = req.path.match(/\/children\/([^/]+)/);
++    if (fromPath) childIds.add(fromPath[1]);
++    for (const src of [req.query, req.body]) {
++      if (src && typeof src === 'object' && src.childId !== undefined) childIds.add(String(src.childId));
++    }
++    const routineMatch = req.path.match(/^\/routines\/([^/]+)/);
++    if (routineMatch && asId(routineMatch[1])) {
++      const r = await Routine.findById(routineMatch[1]).select('childId').lean();
++      if (r) childIds.add(String(r.childId));
++    }
++    for (const id of childIds) {
++      if (!asId(id)) continue; // routes return 400 for malformed ids
++      const child = await Child.findById(id).select('parentId grants').lean();
++      if (child && !req.canAccessChild(child)) return res.status(403).json({ error: 'You do not have access to this child.' });
++    }
++
++    // 2) a parentId (used by the learning / teaching routes) must be the user, or a
++    //    parent whose child the therapist has been granted
++    for (const src of [req.query, req.body]) {
++      const pid = src && typeof src === 'object' ? asId(src.parentId) : null;
++      if (!pid) continue;
++      if (req.user.role === 'parent') {
++        if (pid !== req.user.id) return res.status(403).json({ error: 'You can only view your own data.' });
++      } else if (!(await Child.exists({ parentId: pid, grants: req.user.id }))) {
++        return res.status(403).json({ error: 'You do not have access to this family.' });
++      }
++    }
++
++    // 3) parent-only actions
++    if (req.user.role === 'therapist') {
++      if (req.method === 'POST' && req.path.startsWith('/learning/'))
++        return res.status(403).json({ error: 'The parent lessons can only be completed by the parent.' });
++      if (req.method === 'DELETE' && req.path.startsWith('/teaching/submissions'))
++        return res.status(403).json({ error: 'Only the parent can delete an attempt.' });
++    }
++    next();
++  } catch (e) {
++    console.error('[auth] guard error:', e.message);
++    res.status(500).json({ error: 'Authorization check failed.' });
++  }
++}
++
++module.exports = function registerAuth(app) {
++  const router = express.Router();
++
++  router.post('/auth/login', async (req, res) => {
++    try {
++      const email = String(req.body.email || '').trim().toLowerCase();
++      const password = String(req.body.password || '');
++      const role = req.body.role;
++      if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
++
++      const key = `${req.ip}|${email}`;
++      if (tooMany(key)) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
++
++      const user = await User.findOne({ email });
++      const ok = user && (await bcrypt.compare(password, user.passwordHash));
++      if (!ok) { recordFail(key); return res.status(401).json({ error: 'Incorrect email or password.' }); }
++
++      if (role && role !== user.role) {
++        return res.status(403).json({ error: `This is a ${user.role} account. Please use the ${user.role} login.` });
++      }
++
++      attempts.delete(key);
++      const token = jwt.sign({ sub: String(user._id), role: user.role }, JWT_SECRET, { expiresIn: JWT_TTL });
++      res.json({ token, user: publicUser(user) });
++    } catch (e) { res.status(500).json({ error: e.message }); }
++  });
++
++  router.get('/auth/me', (req, res) => res.json({ user: req.user }));
++
++  app.use('/api', guard, router);
++};
++module.exports.guard = guard;
+diff --git a/neuroai-backend/seed.js b/neuroai-backend/seed.js
+index 94620bf..9416d5f 100644
+--- a/neuroai-backend/seed.js
++++ b/neuroai-backend/seed.js
+@@ -1,97 +1,322 @@
++// Seed data for NeuroAI.
++//
++//  * The server calls runSeed() on every start (AUTO_SEED=false turns that off).
++//  * It is IDEMPOTENT and NON-DESTRUCTIVE: it only creates what is missing, and never
++//    overwrites or deletes anything a user has entered. Restarting keeps all data.
++//  * `npm run seed -- --reset` (alias --force) wipes every collection and reseeds.
++//
++// Everything is derived from a single story so the numbers agree across screens:
++//   Somik (6) -> episodes get milder over 30 days -> routines + 7-day logs -> worksheet
++//   attempts create Progress + Milestone rows -> Goals read their score from Progress
++//   -> parent lessons (Goon) are stored in LearningProgress using the real content ids.
++const fs = require('fs');
++const path = require('path');
+ const mongoose = require('mongoose');
+ const bcrypt = require('bcryptjs');
+-const {
+-  User, Child, Episode, Note, Routine, Activity, ActivityFeedback, Progress, Milestone
+-} = require('./models');
++const M = require('./models');
+ 
+-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/neuroai';
+-const at = (d, h, m = 0) => {
++const ACCOUNTS = {
++  parent: { name: 'Goon Sharma', email: 'goon@example.com', role: 'parent' },
++  therapist: { name: 'Dr. Ajinkya', email: 'dr.ajinkya@neurocare.com', role: 'therapist' }
++};
++
++// ---------- helpers ----------
++const at = (daysAgo, h, m = 0) => {
+   const t = new Date();
+-  t.setDate(t.getDate() - d);
++  t.setDate(t.getDate() - daysAgo);
+   t.setHours(h, m, 0, 0);
+   return t;
+ };
++const dayKey = (d) => d.toISOString().slice(0, 10);
++const readJson = (...p) => {
++  try { return JSON.parse(fs.readFileSync(path.join(__dirname, ...p), 'utf8')); } catch { return null; }
++};
++const log = (...a) => console.log('[seed]', ...a);
+ 
+-async function seed() {
+-  await mongoose.connect(MONGO_URI);
+-  const force = process.argv.includes('--force');
++// create docs only when the child has none of that kind yet
++async function ensureForChild(Model, childId, docsFn, label) {
++  if (await Model.countDocuments({ childId })) return 0;
++  const docs = await docsFn();
++  if (!docs.length) return 0;
++  await Model.create(docs);
++  log(`+ ${docs.length} ${label}`);
++  return docs.length;
++}
+ 
+-  if (!force && (await Child.countDocuments()) > 0) {
+-    console.log('Data already exists, skipping seed. Use --force to wipe and reseed.');
+-    await mongoose.disconnect();
+-    return;
++async function wipeAll() {
++  await Promise.all(Object.values(M).map((model) => model.deleteMany({})));
++  log('all collections cleared');
++}
++
++async function ensureUsers() {
++  const password = process.env.SEED_PASSWORD || 'password123';
++  const out = {};
++  for (const [key, acc] of Object.entries(ACCOUNTS)) {
++    let user = await M.User.findOne({ email: acc.email });
++    if (!user) {
++      user = await M.User.create({ ...acc, passwordHash: await bcrypt.hash(password, 10) });
++      log(`+ user ${acc.email} (${acc.role})`);
++    } else if (!user.passwordHash) {
++      user.passwordHash = await bcrypt.hash(password, 10);
++      await user.save();
++    }
++    out[key] = user;
+   }
++  return out;
++}
+ 
+-  console.log('Connected, seeding...');
++async function ensureChild(parent, therapist) {
++  let child = await M.Child.findOne({ parentId: parent._id, name: 'Somik Sharma' });
++  if (!child) {
++    child = await M.Child.create({
++      parentId: parent._id,
++      name: 'Somik Sharma',
++      dob: new Date('2020-03-14T00:00:00Z'),
++      interests: ['Trains', 'Colouring', 'Water play', 'Puzzles'],
++      notes: 'Responds well to visual schedules and advance warning before transitions. Prefers quiet spaces at lunch.',
++      primaryTriggers: ['Loud Noise / Crowds', 'Separation Anxiety', 'Routine Interruption'],
++      calmingStrategies: ['Weighted Blanket', 'Noise Canceling Headphones', 'Deep Breathing'],
++      grants: [therapist._id]
++    });
++    log('+ child Somik Sharma');
++  } else if (!(child.grants || []).some((g) => String(g) === String(therapist._id))) {
++    child.grants.push(therapist._id); // the therapist must always be linked to the child
++    await child.save();
++    log('+ therapist access granted to existing child');
++  }
++  return child;
++}
+ 
+-  await Promise.all([
+-    User, Child, Episode, Note, Routine, Activity, ActivityFeedback, Progress, Milestone
+-  ].map(m => m.deleteMany({})));
++// ---------- per-child data ----------
++function episodeDocs(childId) {
++  // Trigger / location / intervention names match the child's profile and the frontend
++  // option lists, so the Patterns charts group correctly.
++  const T = { noise: 'Loud Noise / Crowds', sep: 'Separation Anxiety', routine: 'Routine Interruption' };
++  const HP = 'Noise Canceling Headphones';
++  // [daysAgo, hour, min, intensity, trigger, activity, location, minutes, behaviors, interventions]
++  const rows = [
++    [29, 13, 40, 5, T.noise, 'Cafeteria Lunch', 'School Cafeteria', 35, ['Covering ears', 'Screaming'], ['Quiet Room']],
++    [27, 8, 30, 4, T.sep, 'Morning Drop-off', 'School Entrance', 25, ['Crying'], ['Favorite Toy']],
++    [24, 10, 15, 3, T.routine, 'Transition to Math Class', 'Classroom', 15, ['Rocking'], ['Deep Breathing']],
++    [21, 13, 35, 5, T.noise, 'Cafeteria Lunch', 'School Cafeteria', 30, ['Covering ears', 'Shutting down'], ['Quiet Room']],
++    [18, 17, 20, 3, T.routine, 'Dinner time changed', 'Home', 15, ['Crying'], ['Weighted Blanket']],
++    [15, 8, 30, 4, T.sep, 'Morning Drop-off', 'School Entrance', 20, ['Crying', 'Running away'], ['Favorite Toy']],
++    [12, 13, 30, 4, T.noise, 'Cafeteria Lunch', 'School Cafeteria', 25, ['Covering ears', 'Screaming'], [HP, 'Quiet Room']],
++    [9, 11, 0, 3, T.noise, 'Assembly', 'School Hall', 15, ['Covering ears'], [HP]],
++    [7, 10, 15, 2, T.routine, 'Transition to Art Class', 'Classroom', 10, ['Rocking'], ['Deep Breathing']],
++    [5, 13, 30, 4, T.noise, 'Cafeteria Lunch', 'School Cafeteria', 20, ['Covering ears', 'Screaming'], [HP]],
++    [3, 10, 15, 2, T.routine, 'Transition to Math Class', 'Classroom', 10, ['Rocking'], ['Deep Breathing']],
++    [2, 13, 45, 3, T.noise, 'Cafeteria Lunch', 'School Cafeteria', 12, ['Covering ears'], [HP, 'Quiet Room']],
++    [1, 8, 30, 2, T.sep, 'Morning Drop-off', 'School Entrance', 8, ['Crying'], ['Favorite Toy']]
++  ];
++  return rows.map(([d, h, m, intensity, trigger, activity, location, mins, behaviors, calmingInterventions]) => ({
++    childId, ts: at(d, h, m), intensity, trigger, activity, location,
++    sensoryEnvironment: trigger === T.noise ? 'Loud' : 'Normal',
++    sleepHours: intensity >= 4 ? 6 : 8,
++    hungerLevel: h >= 13 ? 'Hungry' : 'Normal',
++    durationMinutes: mins, recoveryMinutes: Math.round(mins * 0.8),
++    behaviors, calmingInterventions,
++    response: calmingInterventions[0] === 'Quiet Room' ? 'Moved to a quiet room' : 'Offered calming tool and stayed close',
++    postEpisodeBehavior: 'Calm but tired'
++  }));
++}
++
++const ROUTINES = [
++  { title: 'Morning Visual Schedule', category: 'Morning', scheduleTime: '07:30' },
++  { title: 'Wear Sensory Headphones at Recess', category: 'School', scheduleTime: '11:00' },
++  { title: 'Calm-down Corner After School', category: 'School', scheduleTime: '15:30' },
++  { title: '5-Min Quiet Time Before Dinner', category: 'Evening', scheduleTime: '18:30' },
++  { title: 'Bedtime Story & Weighted Blanket', category: 'Night', scheduleTime: '20:00' }
++];
++
++// Today's routine.completed flag comes from the same table as the 7-day log, so they agree.
++async function routineDocs(childId) {
++  // status for each of the last 7 days (index 0 = today); evening items are still pending today
++  const patterns = [
++    ['completed', 'completed', 'completed', 'completed', 'completed', 'completed', 'completed'],
++    ['completed', 'completed', 'completed', 'skipped', 'completed', 'completed', 'completed'],
++    ['completed', 'completed', 'skipped', 'completed', 'completed', 'completed', 'skipped'],
++    ['pending', 'completed', 'skipped', 'completed', 'completed', 'skipped', 'completed'],
++    ['pending', 'completed', 'completed', 'completed', 'completed', 'completed', 'completed']
++  ];
++  const created = await M.Routine.create(
++    ROUTINES.map((r, i) => ({ ...r, childId, completed: patterns[i][0] === 'completed' }))
++  );
++  const logs = [];
++  created.forEach((routine, i) => patterns[i].forEach((status, d) => {
++    logs.push({ routineId: routine._id, date: dayKey(at(d, 12)), status });
++  }));
++  await M.RoutineLog.create(logs);
++  log(`+ ${created.length} routines, ${logs.length} routine logs`);
++}
+ 
+-  const passwordHash = await bcrypt.hash('password123', 10);
++// worksheet attempts: [daysAgo, worksheetId, marks per item (0/1/2), engagement, minutes, notes]
++const ATTEMPTS = [
++  [12, 'colors', [1, 1, 2], 3, 12, 'Needed prompts for blue and green. Lost focus after 8 minutes.'],
++  [10, 'colors', [2, 2, 1], 4, 9, 'Much better. Named all colors, one hint for green.'],
++  [8, 'shapes', [1, 1, 2], 3, 10, 'Circle and square easy, triangle needs practice.'],
++  [5, 'numbers-1-5', [2, 2, 2, 1, 1], 4, 14, 'Counted to 3 independently. Wanted to line up toy trains.'],
++  [3, 'shapes', [2, 1, 2], 4, 8, 'Improving. Matched all three shapes with one prompt.'],
++  [2, 'my-feelings', [1, 1, 0], 3, 11, 'Happy and sad are clear. Used feelings cards to point.'],
++  [1, 'numbers-1-5', [2, 2, 2, 2, 1], 5, 10, 'Really enjoyed this one. Counted the trains aloud.']
++];
+ 
+-  const parent = await User.create({
+-    name: 'Goon Sharma', email: 'goon@example.com', role: 'parent', passwordHash
++async function teachingAndProgress(child) {
++  const mod = readJson('content', 'teaching', 'early-learning-foundations.json');
++  if (!mod) { log('teaching content not found, skipping worksheet attempts'); return; }
++  const sheets = new Map(mod.chapters.flatMap((c) => c.worksheets).map((w) => [w.id, w]));
++  const mastered = new Set();
++  let made = 0;
++
++  for (const [daysAgo, wid, levels, engagement, minutes, notes] of ATTEMPTS) {
++    const w = sheets.get(wid);
++    if (!w || w.items.length !== levels.length) { log(`skip attempt for "${wid}" (content changed)`); continue; }
++    const marks = w.items.map((item, i) => ({ itemId: item.id, level: levels[i] }));
++    const score = levels.reduce((a, b) => a + b, 0);
++    const max = levels.length * 2;
++    const percent = Math.round((score / max) * 100);
++    const ts = at(daysAgo, 17, 30);
++
++    const progress = await M.Progress.create({
++      childId: child._id, ts, area: w.area, score: percent, obs: `Worksheet "${w.title}": ${score}/${max}`
++    });
++    let milestoneId;
++    if (percent >= 80 && !mastered.has(wid)) {
++      mastered.add(wid);
++      milestoneId = (await M.Milestone.create({ childId: child._id, ts, title: `Mastered worksheet: ${w.title}` }))._id;
++    }
++    await M.TeachingSubmission.create({
++      childId: child._id, parentId: child.parentId, moduleSlug: mod.slug, worksheetId: wid, ts, day: dayKey(ts),
++      score, max, percent, area: w.area, engagement, minutes, notes, marks,
++      progressId: progress._id, milestoneId
++    });
++    made++;
++  }
++  if (made) log(`+ ${made} worksheet attempts (with linked progress + milestones)`);
++}
++
++async function learningProgress(parent) {
++  const mod = readJson('content', 'learning', 'understanding-autism.json');
++  if (!mod) return;
++  if (await M.LearningProgress.countDocuments({ parentId: parent._id, moduleSlug: mod.slug })) return;
++
++  const lessons = [], quizzes = [], days = new Set();
++  const stamp = (daysAgo) => { const t = at(daysAgo, 21, 15); days.add(dayKey(t)); return t; };
++
++  mod.chapters.forEach((chapter, ci) => {
++    // chapter 1 fully done, chapter 2 half-way, the rest untouched
++    const upTo = ci === 0 ? chapter.subchapters.length : ci === 1 ? 2 : 0;
++    chapter.subchapters.slice(0, upTo).forEach((lesson, li) => {
++      const total = (lesson.questions || []).length;
++      lessons.push({
++        subId: lesson.id, total,
++        correct: total > 1 && li === 2 ? total - 1 : total,
++        completedAt: stamp(Math.max(2, 9 - ci * 3 - li))
++      });
++    });
++    if (ci === 0) {
++      const total = (chapter.quiz || []).length;
++      const score = Math.max(0, total - 1);
++      quizzes.push({ chapterId: chapter.id, total, attempts: 2, best: score, last: score, lastAt: stamp(6) });
++    }
+   });
+-  const therapist = await User.create({
+-    name: 'Dr. Ajinkya', email: 'dr.ajinkya@neurocare.com', role: 'therapist', passwordHash
++  stamp(1); stamp(0); // streak: active yesterday and today
++  await M.LearningProgress.create({
++    parentId: parent._id, moduleSlug: mod.slug, lessons, quizzes,
++    activityDays: [...days].sort(), lastActiveAt: at(0, 9)
+   });
++  log(`+ learning progress for ${parent.name} (${lessons.length} lessons, ${quizzes.length} chapter quiz)`);
++}
+ 
+-  const dob = new Date();
+-  dob.setFullYear(dob.getFullYear() - 6);
++const ACTIVITIES = [
++  { title: 'Bubble Breathing', category: 'Regulation', description: 'Slow breaths while blowing bubbles.', minAge: 3, maxAge: 10, tags: ['calming'] },
++  { title: 'Sort by Color', category: 'Focus', description: 'Sort small objects by color into cups.', minAge: 3, maxAge: 8, tags: ['focus'] },
++  { title: 'Quiet Reading Nook', category: 'Sensory', description: 'Build a low-stimulation corner with cushions and soft light.', minAge: 4, maxAge: 12, tags: ['sensory'] },
++  { title: 'Train Track Counting', category: 'Early Math', description: 'Count wooden train carriages together, 1 to 5.', minAge: 4, maxAge: 8, tags: ['focus', 'interests'] },
++  { title: 'Water Play Calm-down', category: 'Sensory', description: 'Warm water, cups and funnels in a quiet space.', minAge: 3, maxAge: 9, tags: ['sensory', 'calming'] },
++  { title: 'Feelings Cards', category: 'Emotions', description: "Match face cards to how we feel and point to today's feeling.", minAge: 4, maxAge: 9, tags: ['emotions'] }
++];
+ 
+-  const child = await Child.create({
+-    name: 'Somik Sharma',
+-    dob,
+-    parentId: parent._id,
+-    grants: [therapist._id],
+-    primaryTriggers: ['Loud Noise / Crowds', 'Separation Anxiety', 'Routine Interruption'],
+-    calmingStrategies: ['Weighted Blanket', 'Noise-Canceling Headphones', 'Deep Breathing Cards']
+-  });
++async function activities(child) {
++  for (const a of ACTIVITIES) {
++    await M.Activity.updateOne({ title: a.title }, { $setOnInsert: a }, { upsert: true });
++  }
++  if (await M.ActivityFeedback.countDocuments({ childId: child._id })) return;
++  const byTitle = Object.fromEntries((await M.Activity.find({ title: { $in: ACTIVITIES.map((a) => a.title) } })).map((a) => [a.title, a]));
++  const fb = [
++    ['Bubble Breathing', 'Completed', 'Loved the bubbles, calmer afterwards.', 6],
++    ['Quiet Reading Nook', 'Completed', 'Stayed 15 minutes.', 4],
++    ['Sort by Color', 'Too Difficult', 'Too many colors at once, try 2-3.', 3],
++    ['Train Track Counting', 'Completed', 'Counted to 5 with one prompt.', 1]
++  ].filter(([t]) => byTitle[t]).map(([t, rating, notes, d]) => ({
++    activityId: byTitle[t]._id, childId: child._id, rating, notes, ts: at(d, 16)
++  }));
++  await M.ActivityFeedback.create(fb);
++  log(`+ ${fb.length} activity feedback entries`);
++}
+ 
+-  await Episode.create([
+-    { childId: child._id, ts: at(1, 8, 30), intensity: 3, trigger: 'Separation Anxiety',
+-      activity: 'Morning Drop-off', location: 'School Entrance', durationMinutes: 15,
+-      behaviors: ['Crying'], calmingInterventions: ['Favorite Toy'] },
+-    { childId: child._id, ts: at(2, 13, 45), intensity: 4, trigger: 'Loud Noise / Crowds',
+-      activity: 'Cafeteria Lunch', location: 'School Cafeteria', durationMinutes: 25,
+-      behaviors: ['Covering ears', 'Shutting down'], calmingInterventions: ['Noise Canceling Headphones', 'Quiet Room'] },
+-    { childId: child._id, ts: at(3, 10, 15), intensity: 2, trigger: 'Routine Interruption',
+-      activity: 'Transition to Math Class', location: 'Classroom', durationMinutes: 10,
+-      behaviors: ['Rocking'], calmingInterventions: ['Deep Breathing'] },
+-    { childId: child._id, ts: at(5, 13, 30), intensity: 4, trigger: 'Loud Noise / Crowds',
+-      activity: 'Cafeteria Lunch', location: 'School Cafeteria', durationMinutes: 20,
+-      behaviors: ['Covering ears', 'Screaming'], calmingInterventions: ['Noise Canceling Headphones'] }
+-  ]);
+-
+-  await Routine.create([
+-    { childId: child._id, title: 'Morning Visual Schedule', category: 'Morning', scheduleTime: '07:30', completed: true },
+-    { childId: child._id, title: 'Wear Sensory Headphones at Recess', category: 'School', scheduleTime: '11:00', completed: true },
+-    { childId: child._id, title: '5-Min Quiet Time Before Dinner', category: 'Evening', scheduleTime: '18:30', completed: false },
+-    { childId: child._id, title: 'Bedtime Story & Weighted Blanket', category: 'Night', scheduleTime: '20:00', completed: true }
+-  ]);
+-
+-  await Note.create({
+-    childId: child._id,
+-    author: therapist.name,
+-    authorRole: 'Therapist',
+-    text: 'Great progress with headphone adoption during noisy transitions. Continue sensory breaks before 2:00 PM.'
+-  });
++async function seedChildData(child, parent, therapist) {
++  await ensureForChild(M.Episode, child._id, async () => episodeDocs(child._id), 'episodes');
+ 
+-  await Milestone.create({ childId: child._id, title: 'Used visual cue to transition without support' });
++  if (!(await M.Routine.countDocuments({ childId: child._id }))) await routineDocs(child._id);
+ 
+-  await Activity.create([
+-    { title: 'Bubble Breathing', category: 'Regulation', description: 'Slow breaths while blowing bubbles.', minAge: 3, maxAge: 10, tags: ['calming'] },
+-    { title: 'Sort by Color', category: 'Focus', description: 'Sort small objects by color into cups.', minAge: 3, maxAge: 8, tags: ['focus'] },
+-    { title: 'Quiet Reading Nook', category: 'Sensory', description: 'Build a low-stimulation corner with cushions and soft light.', minAge: 4, maxAge: 12, tags: ['sensory'] }
+-  ]);
++  await ensureForChild(M.Contact, child._id, async () => [
++    { childId: child._id, name: therapist.name, role: 'Therapist', email: therapist.email, phone: '+91 98765 43210' },
++    { childId: child._id, name: 'Mrs. Kulkarni', role: 'Class Teacher', email: 'teacher@sunrise-school.example', phone: '+91 98200 11122' },
++    { childId: child._id, name: 'Dr. Mehta', role: 'Pediatrician', email: 'clinic@mehta-kids.example', phone: '+91 98200 33344' },
++    { childId: child._id, name: parent.name, role: 'Parent', email: parent.email, phone: '+91 98765 00011' }
++  ], 'contacts');
+ 
+-  console.log('Seeded.');
+-  console.log(`Child id: ${child._id}`);
+-  await mongoose.disconnect();
++  await ensureForChild(M.Note, child._id, async () => [
++    { childId: child._id, author: therapist.name, authorRole: 'Therapist', ts: at(8, 18), text: 'Headphones are being accepted during noisy transitions. Continue sensory breaks before 2:00 PM.' },
++    { childId: child._id, author: parent.name, authorRole: 'Parent', ts: at(4, 19), text: 'Cafeteria is still the hardest part of the day. Teacher agreed to let Somik eat in the quiet room twice a week.' },
++    { childId: child._id, author: therapist.name, authorRole: 'Therapist', ts: at(1, 18, 30), text: 'Episodes are shorter and milder this week (avg intensity down from 4 to 2.5). Keep the visual schedule at drop-off.' }
++  ], 'notes');
++
++  // goals have no stored score: the API derives "current" from the latest Progress in the same area
++  await ensureForChild(M.Goal, child._id, async () => [
++    // `area` must equal a worksheet area ("Shapes", "Early Math", "Emotions"...) or "Sensory Regulation"
++    { childId: child._id, area: 'Shapes', title: 'Match and name circle, square and triangle', targetScore: 80 },
++    { childId: child._id, area: 'Early Math', title: 'Count objects from 1 to 5 independently', targetScore: 80 },
++    { childId: child._id, area: 'Emotions', title: 'Name 4 basic feelings using cards', targetScore: 75 },
++    { childId: child._id, area: 'Sensory Regulation', title: 'Use headphones or quiet room without prompting', targetScore: 80 }
++  ], 'goals');
++
++  // therapist-assessed progress (worksheet progress is created by teachingAndProgress)
++  if (!(await M.Progress.countDocuments({ childId: child._id, obs: /^Therapist/ }))) {
++    await M.Progress.create([
++      { childId: child._id, ts: at(20, 18), area: 'Sensory Regulation', score: 40, obs: 'Therapist review: needs prompts to use headphones.' },
++      { childId: child._id, ts: at(10, 18), area: 'Sensory Regulation', score: 55, obs: 'Therapist review: uses headphones with one reminder.' },
++      { childId: child._id, ts: at(2, 18), area: 'Sensory Regulation', score: 70, obs: 'Therapist review: reaches for headphones when cafeteria gets loud.' }
++    ]);
++    const cue = 'Used visual cue to transition without support';
++    if (!(await M.Milestone.exists({ childId: child._id, title: cue }))) {
++      await M.Milestone.create({ childId: child._id, ts: at(6, 12), title: cue });
++    }
++    log('+ therapist progress reviews + milestone');
++  }
++
++  if (!(await M.TeachingSubmission.countDocuments({ childId: child._id }))) await teachingAndProgress(child);
++  await activities(child);
+ }
+ 
+-seed().catch(err => {
+-  console.error('Seeding error:', err);
+-  process.exit(1);
+-});   
+\ No newline at end of file
++// ---------- public ----------
++async function runSeed({ reset = false } = {}) {
++  if (reset) await wipeAll();
++  const { parent, therapist } = await ensureUsers();
++  const child = await ensureChild(parent, therapist);
++  await seedChildData(child, parent, therapist);
++  await learningProgress(parent);
++  log(`ready. Logins: ${ACCOUNTS.parent.email} (parent), ${ACCOUNTS.therapist.email} (therapist)`);
++  return { parentId: String(parent._id), therapistId: String(therapist._id), childId: String(child._id) };
++}
++
++module.exports = { runSeed, ACCOUNTS };
++
++if (require.main === module) {
++  const reset = process.argv.includes('--reset') || process.argv.includes('--force');
++  mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/neuroai')
++    .then(() => runSeed({ reset }))
++    .then((ids) => { console.log(ids); return mongoose.disconnect(); })
++    .catch((err) => { console.error('Seeding error:', err); process.exit(1); });
++}
+diff --git a/neuroai-backend/server.js b/neuroai-backend/server.js
+index 2e86e02..2a061e5 100644
+--- a/neuroai-backend/server.js
++++ b/neuroai-backend/server.js
+@@ -2,8 +2,10 @@ const express = require('express');
+ const cors = require('cors');
+ const mongoose = require('mongoose');
+ const {
+-  Child, Episode, Routine, Note, Activity, ActivityFeedback, Progress, Milestone
++  Child, Episode, Routine, Note, Activity, ActivityFeedback, Progress, Milestone, Goal, Contact
+ } = require('./models');
++const registerAuth = require('./auth');
++const { runSeed } = require('./seed');
+ 
+ const app = express();
+ const PORT = process.env.PORT || 5000;
+@@ -11,11 +13,20 @@ const OLLAMA_URL = process.env.OLLAMA_URL || ''; // e.g. http://host:11434/api/g
+ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+ const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+ 
+-app.use(cors({ origin: ALLOWED_ORIGIN }));
++app.use(cors({ origin: ALLOWED_ORIGIN.split(',').map(o => o.trim()) }));
+ app.use(express.json({ limit: '100kb' }));
+ 
++// login + token check for every /api route (except /api/health and /api/auth/login)
++registerAuth(app);
++
+ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/neuroai')
+-  .then(() => console.log('MongoDB connected'))
++  .then(async () => {
++    console.log('MongoDB connected');
++    // Creates only what is missing, never overwrites, so data survives restarts.
++    if (process.env.AUTO_SEED !== 'false') {
++      try { await runSeed(); } catch (e) { console.error('Seed failed:', e.message); }
++    }
++  })
+   .catch(err => console.error('MongoDB connection error:', err));
+ 
+ // ---------- helpers ----------
+@@ -72,9 +83,11 @@ async function askOllama(prompt) {
+ }
+ 
+ // ---------- routes ----------
+-app.get('/api/children', async (_req, res) => {
++app.get('/api/children', async (req, res) => {
+   try {
+-    const children = await Child.find().lean();
++    // parents see their own children, therapists see the children they were granted
++    const filter = req.user.role === 'parent' ? { parentId: req.user.id } : { grants: req.user.id };
++    const children = await Child.find(filter).sort({ name: 1 }).lean();
+     res.json(children.map(c => ({ _id: c._id, name: c.name, age: ageFrom(c.dob), parentId: c.parentId })));
+   } catch (e) { res.status(500).json({ error: e.message }); }
+ });
+@@ -142,9 +155,15 @@ app.get('/api/children/:id/notes', validateChild, async (req, res) => {
+ 
+ app.post('/api/children/:id/notes', validateChild, async (req, res) => {
+   try {
+-    const { author, authorRole, text } = req.body;
+-    if (!author || !text) return res.status(400).json({ error: 'author and text required' });
+-    res.status(201).json(await Note.create({ childId: req.params.id, author, authorRole, text }));
++    // author comes from the login, not from the request body
++    const text = String(req.body.text || '').trim();
++    if (!text) return res.status(400).json({ error: 'text required' });
++    res.status(201).json(await Note.create({
++      childId: req.params.id,
++      author: req.user.name,
++      authorRole: req.user.role === 'therapist' ? 'Therapist' : 'Parent',
++      text
++    }));
+   } catch (e) { res.status(400).json({ error: e.message }); }
+ });
+ 
+@@ -158,6 +177,31 @@ app.get('/api/children/:id/team', validateChild, async (req, res) => {
+   } catch (e) { res.status(500).json({ error: e.message }); }
+ });
+ 
++// goals: "current" is derived from the latest Progress entry in the same area,
++// so it can never disagree with the progress timeline
++app.get('/api/children/:id/goals', validateChild, async (req, res) => {
++  try {
++    const [goals, progress] = await Promise.all([
++      Goal.find({ childId: req.params.id }).lean(),
++      Progress.find({ childId: req.params.id }).sort({ ts: 1 }).lean()
++    ]);
++    res.json(goals.map(g => {
++      const inArea = progress.filter(p => p.area === g.area && typeof p.score === 'number');
++      const latest = inArea[inArea.length - 1];
++      return {
++        _id: g._id, area: g.area, title: g.title, targetScore: g.targetScore,
++        currentScore: latest ? latest.score : 0,
++        history: inArea.slice(-6).map(p => ({ ts: p.ts, score: p.score }))
++      };
++    }));
++  } catch (e) { res.status(500).json({ error: e.message }); }
++});
++
++app.get('/api/children/:id/contacts', validateChild, async (req, res) => {
++  try { res.json(await Contact.find({ childId: req.params.id }).sort({ role: 1 })); }
++  catch (e) { res.status(500).json({ error: e.message }); }
++});
++
+ app.get('/api/children/:id/routines', validateChild, async (req, res) => {
+   try {
+     res.json(await Routine.find({ childId: req.params.id }).sort({ scheduleTime: 1 }));
+diff --git a/neuroai-backend/teaching.js b/neuroai-backend/teaching.js
+index 41ea3d9..f28cdf8 100644
+--- a/neuroai-backend/teaching.js
++++ b/neuroai-backend/teaching.js
+@@ -71,7 +71,7 @@ module.exports = function registerTeaching(app) {
+   router.get('/children/:id/insights', guard(async (req, res) => { const access = await loadChild(req.params.id, req.query.parentId); if (access.error) return res.status(access.status).json({ error: access.error }); const submissions = await listSubmissions({ childId: access.child._id }); const stats = statsFor(submissions); res.json({ ...buildInsights(submissions, stats), recommendations: recommendations(submissions, stats, ageOf(access.child.dob)) }); }));
+   router.get('/children/:id/submissions', guard(async (req, res) => { const access = await loadChild(req.params.id, req.query.parentId); if (access.error) return res.status(access.status).json({ error: access.error }); const filter = { childId: access.child._id }; if (req.query.moduleSlug) filter.moduleSlug = String(req.query.moduleSlug); if (req.query.worksheetId) filter.worksheetId = String(req.query.worksheetId); const submissions = await listSubmissions(filter); res.json(submissions.sort((a, b) => new Date(b.ts) - new Date(a.ts)).map(publicSubmission)); }));
+   router.get('/worksheets/:slug/:wid/pdf', guard(async (req, res) => { const moduleData = BY_SLUG.get(req.params.slug); const worksheet = moduleData && findWorksheet(moduleData, req.params.wid); if (!worksheet) return res.status(404).json({ error: 'Worksheet not found' }); const access = await loadChild(req.query.childId, req.query.parentId); if (access.error) return res.status(access.status).json({ error: access.error }); const safe = (latin(access.child.name).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'child').toLowerCase(); res.setHeader('Content-Type', 'application/pdf'); res.setHeader('Content-Disposition', `${req.query.inline === '1' ? 'inline' : 'attachment'}; filename="${worksheet.id}-${safe}.pdf"`); buildWorksheetPdf(worksheet, access.child.name, '').pipe(res); }));
+-  router.post('/submissions', (req, res, next) => upload.single('file')(req, res, (error) => { if (error) return res.status(400).json({ error: error.code === 'LIMIT_FILE_SIZE' ? 'That file is over 8 MB.' : error.message }); next(); }), guard(async (req, res) => { const body = req.body; const access = await loadChild(body.childId, body.parentId); if (access.error) return res.status(access.status).json({ error: access.error }); const moduleData = BY_SLUG.get(body.moduleSlug); const worksheet = moduleData && findWorksheet(moduleData, body.worksheetId); if (!worksheet) return res.status(404).json({ error: 'Worksheet not found' }); let raw; try { raw = JSON.parse(body.marks || '{}'); } catch { return res.status(400).json({ error: 'marks must be JSON' }); } if (worksheet.items.some((item) => ![0, 1, 2].includes(Number(raw[item.id])))) return res.status(400).json({ error: 'Please mark every task (0, 1 or 2)' }); const marks = worksheet.items.map((item) => ({ itemId: item.id, level: Number(raw[item.id]) })); const score = marks.reduce((sum, mark) => sum + mark.level, 0); const max = marks.length * 2; const percent = Math.round(score / max * 100); const independent = marks.filter((mark) => mark.level === 2).length; const prompted = marks.filter((mark) => mark.level === 1).length; const previous = await listSubmissions({ childId: access.child._id, moduleSlug: moduleData.slug, worksheetId: worksheet.id }); const mastered = percent >= MASTERY; const newMilestone = mastered && !previous.some((item) => item.percent >= MASTERY); const submission = new TeachingSubmission({ childId: access.child._id, parentId: access.child.parentId, moduleSlug: moduleData.slug, worksheetId: worksheet.id, day: dayOrToday(body.day), score, max, percent, area: worksheet.area, marks, engagement: Number(body.engagement) >= 1 && Number(body.engagement) <= 5 ? Number(body.engagement) : undefined, minutes: Number(body.minutes) >= 0 && Number(body.minutes) <= 180 ? Number(body.minutes) : undefined, notes: String(body.notes || '').slice(0, 1000), file: req.file ? { data: req.file.buffer, mime: req.file.mimetype, name: String(req.file.originalname || 'sheet').slice(0, 120) } : undefined }); const progress = await Progress.create({ childId: access.child._id, area: worksheet.area, score: percent, obs: `Worksheet "${worksheet.title}": ${score}/${max}` }); submission.progressId = progress._id; if (newMilestone) { const milestone = await Milestone.create({ childId: access.child._id, title: `Mastered worksheet: ${worksheet.title}` }); submission.milestoneId = milestone._id; } await submission.save(); const all = await listSubmissions({ childId: access.child._id, moduleSlug: moduleData.slug, worksheetId: worksheet.id }); res.status(201).json({ submission: publicSubmission(submission.toObject()), result: { score, max, percent, independent, prompted, notYet: marks.length - independent - prompted, mastered, newMilestone, message: percent >= 90 ? 'Wonderful work! Almost everything was done independently.' : mastered ? 'Great job! This skill is looking solid.' : 'Every try counts. Repeat this sheet soon with short, relaxed practice.', area: worksheet.area, skill: worksheet.skill }, stats: statsFor(all)[`${moduleData.slug}/${worksheet.id}`] }); }));
++  router.post('/submissions', (req, res, next) => upload.single('file')(req, res, (error) => { if (error) return res.status(400).json({ error: error.code === 'LIMIT_FILE_SIZE' ? 'That file is over 8 MB.' : error.message }); next(); }), guard(async (req, res) => { const body = req.body; const access = await loadChild(body.childId, body.parentId); if (access.error) return res.status(access.status).json({ error: access.error }); if (!req.canAccessChild(access.child)) return res.status(403).json({ error: 'You do not have access to this child.' }); const moduleData = BY_SLUG.get(body.moduleSlug); const worksheet = moduleData && findWorksheet(moduleData, body.worksheetId); if (!worksheet) return res.status(404).json({ error: 'Worksheet not found' }); let raw; try { raw = JSON.parse(body.marks || '{}'); } catch { return res.status(400).json({ error: 'marks must be JSON' }); } if (worksheet.items.some((item) => ![0, 1, 2].includes(Number(raw[item.id])))) return res.status(400).json({ error: 'Please mark every task (0, 1 or 2)' }); const marks = worksheet.items.map((item) => ({ itemId: item.id, level: Number(raw[item.id]) })); const score = marks.reduce((sum, mark) => sum + mark.level, 0); const max = marks.length * 2; const percent = Math.round(score / max * 100); const independent = marks.filter((mark) => mark.level === 2).length; const prompted = marks.filter((mark) => mark.level === 1).length; const previous = await listSubmissions({ childId: access.child._id, moduleSlug: moduleData.slug, worksheetId: worksheet.id }); const mastered = percent >= MASTERY; const newMilestone = mastered && !previous.some((item) => item.percent >= MASTERY); const submission = new TeachingSubmission({ childId: access.child._id, parentId: access.child.parentId, moduleSlug: moduleData.slug, worksheetId: worksheet.id, day: dayOrToday(body.day), score, max, percent, area: worksheet.area, marks, engagement: Number(body.engagement) >= 1 && Number(body.engagement) <= 5 ? Number(body.engagement) : undefined, minutes: Number(body.minutes) >= 0 && Number(body.minutes) <= 180 ? Number(body.minutes) : undefined, notes: String(body.notes || '').slice(0, 1000), file: req.file ? { data: req.file.buffer, mime: req.file.mimetype, name: String(req.file.originalname || 'sheet').slice(0, 120) } : undefined }); const progress = await Progress.create({ childId: access.child._id, area: worksheet.area, score: percent, obs: `Worksheet "${worksheet.title}": ${score}/${max}` }); submission.progressId = progress._id; if (newMilestone) { const milestone = await Milestone.create({ childId: access.child._id, title: `Mastered worksheet: ${worksheet.title}` }); submission.milestoneId = milestone._id; } await submission.save(); const all = await listSubmissions({ childId: access.child._id, moduleSlug: moduleData.slug, worksheetId: worksheet.id }); res.status(201).json({ submission: publicSubmission(submission.toObject()), result: { score, max, percent, independent, prompted, notYet: marks.length - independent - prompted, mastered, newMilestone, message: percent >= 90 ? 'Wonderful work! Almost everything was done independently.' : mastered ? 'Great job! This skill is looking solid.' : 'Every try counts. Repeat this sheet soon with short, relaxed practice.', area: worksheet.area, skill: worksheet.skill }, stats: statsFor(all)[`${moduleData.slug}/${worksheet.id}`] }); }));
+   router.delete('/submissions/:id', guard(async (req, res) => { if (!isId(req.params.id) || !isId(req.query.parentId)) return res.status(400).json({ error: 'Valid ids required' }); const submission = await TeachingSubmission.findOne({ _id: req.params.id, parentId: req.query.parentId }); if (!submission) return res.status(404).json({ error: 'Attempt not found' }); if (submission.progressId) await Progress.deleteOne({ _id: submission.progressId }); if (submission.milestoneId) await Milestone.deleteOne({ _id: submission.milestoneId }); await submission.deleteOne(); res.json({ ok: true }); }));
+   router.get('/submissions/:id/file', guard(async (req, res) => { if (!isId(req.params.id) || !isId(req.query.parentId)) return res.status(400).json({ error: 'Valid ids required' }); const submission = await TeachingSubmission.findOne({ _id: req.params.id, parentId: req.query.parentId }).select('file'); if (!submission?.file?.data) return res.status(404).json({ error: 'No file for this attempt' }); res.setHeader('Content-Type', submission.file.mime); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(submission.file.name || 'sheet')}"`); res.send(submission.file.data); }));
+   app.use('/api/teaching', router);

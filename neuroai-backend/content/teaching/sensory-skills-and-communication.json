@@ -1,0 +1,661 @@
+{
+  "slug": "sensory-skills-and-communication",
+  "order": 3,
+  "title": "Module 3: Sensory Skills and Communication",
+  "area": "Sensory Communication",
+  "summary": "Build sequencing, imitation, visual attention, flexible thinking, tool choice and pretend play.",
+  "definitions": [
+    [
+      "first-next-last",
+      "First, Next, Last",
+      "Sequencing",
+      "Following a short sequence",
+      "routine",
+      [
+        [
+          "wake up",
+          [
+            "wake up",
+            "eat",
+            "sleep"
+          ]
+        ],
+        [
+          "eat",
+          [
+            "wake up",
+            "eat",
+            "sleep"
+          ]
+        ],
+        [
+          "sleep",
+          [
+            "wake up",
+            "eat",
+            "sleep"
+          ]
+        ]
+      ],
+      "Use three familiar actions and say first, next and last while acting them out. Use pictures or gestures when helpful.",
+      "Predictable steps help communication."
+    ],
+    [
+      "choose-the-tool",
+      "Choose the Tool",
+      "Functional Communication",
+      "Choosing a useful tool",
+      "object",
+      [
+        [
+          "apple",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ],
+        [
+          "ball",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ],
+        [
+          "star",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ]
+      ],
+      "Offer two tools for a simple task and let your child point, reach, gesture or use words to choose.",
+      "The child’s communication does not need to be spoken."
+    ],
+    [
+      "copy-the-movement",
+      "Copy the Movement",
+      "Imitation",
+      "Copying actions",
+      "shape",
+      [
+        [
+          "circle",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ],
+        [
+          "square",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ],
+        [
+          "triangle",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ]
+      ],
+      "Use one simple movement at a time. Wait, celebrate attempts and avoid physically forcing imitation.",
+      "An attempt to copy is meaningful progress."
+    ],
+    [
+      "same-or-different",
+      "Same or Different",
+      "Thinking Skills",
+      "Comparing objects",
+      "color",
+      [
+        [
+          "red",
+          [
+            "red",
+            "blue",
+            "yellow"
+          ]
+        ],
+        [
+          "blue",
+          [
+            "red",
+            "blue",
+            "yellow"
+          ]
+        ],
+        [
+          "yellow",
+          [
+            "red",
+            "blue",
+            "yellow"
+          ]
+        ]
+      ],
+      "Place two objects together and ask whether they are the same or different. Accept pointing, gestures or words.",
+      "Comparison can be shown in many ways."
+    ],
+    [
+      "look-and-find",
+      "Look and Find",
+      "Visual Attention",
+      "Finding a target",
+      "object",
+      [
+        [
+          "apple",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ],
+        [
+          "ball",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ],
+        [
+          "star",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ]
+      ],
+      "Name a target and give your child time to scan. Reduce distractions and praise looking, not only the correct answer.",
+      "Slow looking supports accurate choices."
+    ],
+    [
+      "build-and-pretend",
+      "Build and Pretend",
+      "Play and Imagination",
+      "Building and pretend play",
+      "routine",
+      [
+        [
+          "eat",
+          [
+            "eat",
+            "sleep",
+            "wake up"
+          ]
+        ],
+        [
+          "sleep",
+          [
+            "eat",
+            "sleep",
+            "wake up"
+          ]
+        ],
+        [
+          "wake up",
+          [
+            "eat",
+            "sleep",
+            "wake up"
+          ]
+        ]
+      ],
+      "Build something simple with blocks or household items, then act out one pretend action together.",
+      "There is more than one right way to play."
+    ]
+  ],
+  "ages": [
+    3,
+    6
+  ],
+  "level": "Beginner",
+  "outcomes": [
+    "Following a short sequence",
+    "Choosing a useful tool",
+    "Copying actions",
+    "Comparing objects",
+    "Finding a target",
+    "Building and pretend play"
+  ],
+  "howTo": "Keep sessions short, follow your child’s signals and offer a break or a different way to participate whenever needed.",
+  "chapters": [
+    {
+      "id": "c1",
+      "title": "Chapter 1: First, Next, Last",
+      "summary": "Use three familiar actions and say first, next and last while acting them out. Use pictures or gestures when helpful.",
+      "worksheets": [
+        {
+          "id": "first-next-last",
+          "title": "First, Next, Last",
+          "skill": "Following a short sequence",
+          "area": "Sequencing",
+          "minutes": 8,
+          "goal": "Use three familiar actions and say first, next and last while acting them out. Use pictures or gestures when helpful.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Use three familiar actions and say first, next and last while acting them out. Use pictures or gestures when helpful.",
+          "takeaway": "Predictable steps help communication.",
+          "sheet": {
+            "kind": "routine",
+            "chapter": 1,
+            "rows": [
+              {
+                "target": "wake up",
+                "choices": [
+                  "wake up",
+                  "eat",
+                  "sleep"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "eat",
+                "choices": [
+                  "wake up",
+                  "eat",
+                  "sleep"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "sleep",
+                "choices": [
+                  "wake up",
+                  "eat",
+                  "sleep"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "first-next-last-1",
+              "type": "choose",
+              "prompt": "Choose the WAKE UP example"
+            },
+            {
+              "id": "first-next-last-2",
+              "type": "choose",
+              "prompt": "Choose the EAT example"
+            },
+            {
+              "id": "first-next-last-3",
+              "type": "choose",
+              "prompt": "Choose the SLEEP example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "title": "Chapter 2: Choose the Tool",
+      "summary": "Offer two tools for a simple task and let your child point, reach, gesture or use words to choose.",
+      "worksheets": [
+        {
+          "id": "choose-the-tool",
+          "title": "Choose the Tool",
+          "skill": "Choosing a useful tool",
+          "area": "Functional Communication",
+          "minutes": 8,
+          "goal": "Offer two tools for a simple task and let your child point, reach, gesture or use words to choose.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Offer two tools for a simple task and let your child point, reach, gesture or use words to choose.",
+          "takeaway": "The child’s communication does not need to be spoken.",
+          "sheet": {
+            "kind": "object",
+            "chapter": 2,
+            "rows": [
+              {
+                "target": "apple",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "ball",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "star",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "choose-the-tool-1",
+              "type": "match",
+              "prompt": "Choose the APPLE example"
+            },
+            {
+              "id": "choose-the-tool-2",
+              "type": "match",
+              "prompt": "Choose the BALL example"
+            },
+            {
+              "id": "choose-the-tool-3",
+              "type": "match",
+              "prompt": "Choose the STAR example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "title": "Chapter 3: Copy the Movement",
+      "summary": "Use one simple movement at a time. Wait, celebrate attempts and avoid physically forcing imitation.",
+      "worksheets": [
+        {
+          "id": "copy-the-movement",
+          "title": "Copy the Movement",
+          "skill": "Copying actions",
+          "area": "Imitation",
+          "minutes": 8,
+          "goal": "Use one simple movement at a time. Wait, celebrate attempts and avoid physically forcing imitation.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Use one simple movement at a time. Wait, celebrate attempts and avoid physically forcing imitation.",
+          "takeaway": "An attempt to copy is meaningful progress.",
+          "sheet": {
+            "kind": "shape",
+            "chapter": 3,
+            "rows": [
+              {
+                "target": "circle",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "square",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "triangle",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "copy-the-movement-1",
+              "type": "match",
+              "prompt": "Choose the CIRCLE example"
+            },
+            {
+              "id": "copy-the-movement-2",
+              "type": "match",
+              "prompt": "Choose the SQUARE example"
+            },
+            {
+              "id": "copy-the-movement-3",
+              "type": "match",
+              "prompt": "Choose the TRIANGLE example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "title": "Chapter 4: Same or Different",
+      "summary": "Place two objects together and ask whether they are the same or different. Accept pointing, gestures or words.",
+      "worksheets": [
+        {
+          "id": "same-or-different",
+          "title": "Same or Different",
+          "skill": "Comparing objects",
+          "area": "Thinking Skills",
+          "minutes": 8,
+          "goal": "Place two objects together and ask whether they are the same or different. Accept pointing, gestures or words.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Place two objects together and ask whether they are the same or different. Accept pointing, gestures or words.",
+          "takeaway": "Comparison can be shown in many ways.",
+          "sheet": {
+            "kind": "color",
+            "chapter": 4,
+            "rows": [
+              {
+                "target": "red",
+                "choices": [
+                  "red",
+                  "blue",
+                  "yellow"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "blue",
+                "choices": [
+                  "red",
+                  "blue",
+                  "yellow"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "yellow",
+                "choices": [
+                  "red",
+                  "blue",
+                  "yellow"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "same-or-different-1",
+              "type": "match",
+              "prompt": "Choose the RED example"
+            },
+            {
+              "id": "same-or-different-2",
+              "type": "match",
+              "prompt": "Choose the BLUE example"
+            },
+            {
+              "id": "same-or-different-3",
+              "type": "match",
+              "prompt": "Choose the YELLOW example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "title": "Chapter 5: Look and Find",
+      "summary": "Name a target and give your child time to scan. Reduce distractions and praise looking, not only the correct answer.",
+      "worksheets": [
+        {
+          "id": "look-and-find",
+          "title": "Look and Find",
+          "skill": "Finding a target",
+          "area": "Visual Attention",
+          "minutes": 8,
+          "goal": "Name a target and give your child time to scan. Reduce distractions and praise looking, not only the correct answer.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Name a target and give your child time to scan. Reduce distractions and praise looking, not only the correct answer.",
+          "takeaway": "Slow looking supports accurate choices.",
+          "sheet": {
+            "kind": "object",
+            "chapter": 5,
+            "rows": [
+              {
+                "target": "apple",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "ball",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "star",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "look-and-find-1",
+              "type": "match",
+              "prompt": "Choose the APPLE example"
+            },
+            {
+              "id": "look-and-find-2",
+              "type": "match",
+              "prompt": "Choose the BALL example"
+            },
+            {
+              "id": "look-and-find-3",
+              "type": "match",
+              "prompt": "Choose the STAR example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "title": "Chapter 6: Build and Pretend",
+      "summary": "Build something simple with blocks or household items, then act out one pretend action together.",
+      "worksheets": [
+        {
+          "id": "build-and-pretend",
+          "title": "Build and Pretend",
+          "skill": "Building and pretend play",
+          "area": "Play and Imagination",
+          "minutes": 8,
+          "goal": "Build something simple with blocks or household items, then act out one pretend action together.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Build something simple with blocks or household items, then act out one pretend action together.",
+          "takeaway": "There is more than one right way to play.",
+          "sheet": {
+            "kind": "routine",
+            "chapter": 6,
+            "rows": [
+              {
+                "target": "eat",
+                "choices": [
+                  "eat",
+                  "sleep",
+                  "wake up"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "sleep",
+                "choices": [
+                  "eat",
+                  "sleep",
+                  "wake up"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "wake up",
+                "choices": [
+                  "eat",
+                  "sleep",
+                  "wake up"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "build-and-pretend-1",
+              "type": "choose",
+              "prompt": "Choose the EAT example"
+            },
+            {
+              "id": "build-and-pretend-2",
+              "type": "choose",
+              "prompt": "Choose the SLEEP example"
+            },
+            {
+              "id": "build-and-pretend-3",
+              "type": "choose",
+              "prompt": "Choose the WAKE UP example"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

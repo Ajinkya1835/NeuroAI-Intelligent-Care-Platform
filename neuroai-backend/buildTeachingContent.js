@@ -34,7 +34,43 @@ const moduleData = {
   })
 };
 
+const sensoryModules = [
+  {
+    slug: 'sensory-learning-and-exploration', order: 2, title: 'Module 2: Sensory Learning and Exploration', area: 'Sensory Learning',
+    summary: 'Explore touch, movement, pouring, outdoor noticing, sorting and sensory choices through short supported activities.',
+    definitions: [
+      ['touch-and-texture', 'Touch and Texture', 'Sensory Exploration', 'Texture matching', 'object', [['apple', ['apple', 'ball', 'star']], ['ball', ['apple', 'ball', 'star']]], 'Let your child touch safe objects with different textures. Name each texture and allow them to choose whether to continue.', 'Your child can explore at their own pace.'],
+      ['pour-and-scoop', 'Pour and Scoop', 'Fine Motor', 'Scooping and pouring', 'count', [[1, [1, 2, 3]], [2, [1, 2, 3]], [3, [3, 1, 2]]], 'Use cups, spoons and a tray with dry rice or water. Demonstrate slowly, then let your child scoop and pour.', 'Small repeated movements build control.'],
+      ['move-and-play', 'Move and Play', 'Movement', 'Copying safe movements', 'shape', [['circle', ['circle', 'square', 'triangle']], ['square', ['circle', 'square', 'triangle']], ['triangle', ['circle', 'square', 'triangle']]], 'Offer simple actions such as stretch, push, jump or roll. Follow your child’s lead and pause when they show they need a break.', 'Movement should feel safe and fun.'],
+      ['sensory-walk', 'Sensory Walk', 'Sensory Awareness', 'Noticing the environment', 'color', [['red', ['red', 'blue', 'yellow']], ['blue', ['red', 'blue', 'yellow']], ['yellow', ['red', 'blue', 'yellow']]], 'Take a short walk and notice one sound, color, texture or movement at a time. Keep the route familiar and optional.', 'Notice without pressure.'],
+      ['sort-by-shape', 'Sort by Shape', 'Early Thinking', 'Sorting objects', 'shape', [['circle', ['circle', 'square', 'triangle']], ['square', ['circle', 'square', 'triangle']], ['triangle', ['circle', 'square', 'triangle']]], 'Sort safe household objects by shape. Start with two groups, then add a third when your child is ready.', 'One clear rule at a time makes sorting easier.'],
+      ['my-sensory-choices', 'My Sensory Choices', 'Self-Advocacy', 'Choosing what feels comfortable', 'face', [['happy', ['happy', 'sad', 'angry']], ['sad', ['happy', 'sad', 'angry']], ['happy', ['happy', 'sad', 'angry']]], 'Offer two safe options, such as quiet or music, soft or rough, and ask your child to show or point to their choice.', 'A choice or a break is communication.']
+    ]
+  },
+  {
+    slug: 'sensory-skills-and-communication', order: 3, title: 'Module 3: Sensory Skills and Communication', area: 'Sensory Communication',
+    summary: 'Build sequencing, imitation, visual attention, flexible thinking, tool choice and pretend play.',
+    definitions: [
+      ['first-next-last', 'First, Next, Last', 'Sequencing', 'Following a short sequence', 'routine', [['wake up', ['wake up', 'eat', 'sleep']], ['eat', ['wake up', 'eat', 'sleep']], ['sleep', ['wake up', 'eat', 'sleep']]], 'Use three familiar actions and say first, next and last while acting them out. Use pictures or gestures when helpful.', 'Predictable steps help communication.'],
+      ['choose-the-tool', 'Choose the Tool', 'Functional Communication', 'Choosing a useful tool', 'object', [['apple', ['apple', 'ball', 'star']], ['ball', ['apple', 'ball', 'star']], ['star', ['apple', 'ball', 'star']]], 'Offer two tools for a simple task and let your child point, reach, gesture or use words to choose.', 'The child’s communication does not need to be spoken.'],
+      ['copy-the-movement', 'Copy the Movement', 'Imitation', 'Copying actions', 'shape', [['circle', ['circle', 'square', 'triangle']], ['square', ['circle', 'square', 'triangle']], ['triangle', ['circle', 'square', 'triangle']]], 'Use one simple movement at a time. Wait, celebrate attempts and avoid physically forcing imitation.', 'An attempt to copy is meaningful progress.'],
+      ['same-or-different', 'Same or Different', 'Thinking Skills', 'Comparing objects', 'color', [['red', ['red', 'blue', 'yellow']], ['blue', ['red', 'blue', 'yellow']], ['yellow', ['red', 'blue', 'yellow']]], 'Place two objects together and ask whether they are the same or different. Accept pointing, gestures or words.', 'Comparison can be shown in many ways.'],
+      ['look-and-find', 'Look and Find', 'Visual Attention', 'Finding a target', 'object', [['apple', ['apple', 'ball', 'star']], ['ball', ['apple', 'ball', 'star']], ['star', ['apple', 'ball', 'star']]], 'Name a target and give your child time to scan. Reduce distractions and praise looking, not only the correct answer.', 'Slow looking supports accurate choices.'],
+      ['build-and-pretend', 'Build and Pretend', 'Play and Imagination', 'Building and pretend play', 'routine', [['eat', ['eat', 'sleep', 'wake up']], ['sleep', ['eat', 'sleep', 'wake up']], ['wake up', ['eat', 'sleep', 'wake up']]], 'Build something simple with blocks or household items, then act out one pretend action together.', 'There is more than one right way to play.']
+    ]
+  }
+];
+
+function makeAdditionalModule(moduleDefinition) {
+  return { ...moduleDefinition, ages: [3, 6], level: 'Beginner', outcomes: moduleDefinition.definitions.map((item) => item[3]), howTo: 'Keep sessions short, follow your child’s signals and offer a break or a different way to participate whenever needed.', chapters: moduleDefinition.definitions.map((item, index) => {
+    const [id, title, area, skill, kind, values, teach, takeaway] = item;
+    const sheetRows = rows(kind, values);
+    return { id: `c${index + 1}`, title: `Chapter ${index + 1}: ${title}`, summary: teach, worksheets: [{ id, title, skill, area, minutes: 8, goal: teach, materials: ['Printed worksheet', 'Safe household objects'], teach, takeaway, sheet: { kind, chapter: index + 1, rows: sheetRows }, items: makeItems(id, sheetRows, { type: kind === 'count' ? 'count' : kind === 'face' ? 'facepick' : kind === 'routine' ? 'choose' : 'match', text: (row) => `Choose the ${String(row.target).toUpperCase()} example` }) }] };
+  }) };
+}
+
 const directory = path.join(__dirname, 'content', 'teaching');
 fs.mkdirSync(directory, { recursive: true });
 fs.writeFileSync(path.join(directory, 'early-learning-foundations.json'), JSON.stringify(moduleData, null, 2));
+sensoryModules.forEach((moduleDefinition) => fs.writeFileSync(path.join(directory, `${moduleDefinition.slug}.json`), JSON.stringify(makeAdditionalModule(moduleDefinition), null, 2)));
 console.log('Wrote content/teaching/early-learning-foundations.json');

@@ -1,3 +1,6 @@
+// The care app (main/) hosts the real login pages. Override with NEXT_PUBLIC_APP_URL.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 const styles = {
   nav: {
     width: "100%",
@@ -89,7 +92,10 @@ export default function Navbar() {
           </a>
 
           {/* Action Button */}
-          <a href="/login" style={styles.button}>
+          <a href={`${APP_URL}/login`} style={styles.link}>
+            Log in
+          </a>
+          <a href={`${APP_URL}/login`} style={styles.button}>
             Get Started
           </a>
         </div>
