@@ -3,8 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Home, AlertTriangle, Calendar, Activity, Award, Users,
-  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff
+  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap
 } from 'lucide-react';
+import LearningHub from './components/learning/LearningHub';
+import LearningSummaryCard from './components/learning/LearningSummaryCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -14,6 +16,7 @@ const TABS = [
   { id: 'routines', label: 'Routines', icon: Calendar },
   { id: 'insights', label: 'Patterns', icon: Activity },
   { id: 'activities', label: 'Activities', icon: Award },
+  { id: 'learn', label: 'Learn', icon: GraduationCap },
   { id: 'therapist', label: 'Therapist', icon: Users },
 ];
 
@@ -280,6 +283,8 @@ export default function NeuroAIDashboard() {
                 ))}
               </div>
 
+              {child.parentId && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
+
               <Card>
                 <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
                   <Sparkles className="w-4 h-4" /> Pattern insight
@@ -422,6 +427,9 @@ export default function NeuroAIDashboard() {
               </div>
             </div>
           )}
+
+          {/* LEARN */}
+          {child && child.parentId && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
 
           {/* THERAPIST */}
           {child && tab === 'therapist' && (

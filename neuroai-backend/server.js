@@ -75,7 +75,7 @@ async function askOllama(prompt) {
 app.get('/api/children', async (_req, res) => {
   try {
     const children = await Child.find().lean();
-    res.json(children.map(c => ({ _id: c._id, name: c.name, age: ageFrom(c.dob) })));
+    res.json(children.map(c => ({ _id: c._id, name: c.name, age: ageFrom(c.dob), parentId: c.parentId })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -250,6 +250,8 @@ app.post('/api/ai/chat', async (req, res) => {
     res.status(503).json({ reply: 'The AI assistant is offline right now. Try again later.' });
   }
 });
+
+require('./learning')(app);
 
 app.listen(PORT, () => {
   console.log(`Backend on http://localhost:${PORT}`);

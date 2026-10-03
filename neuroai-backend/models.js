@@ -109,6 +109,16 @@ const activityFeedbackSchema = new Schema({
   ts: { type: Date, default: Date.now }
 });
 
+const learningProgressSchema = new Schema({
+  parentId: oid('User'),
+  moduleSlug: { type: String, required: true },
+  lessons: [{ _id: false, subId: String, correct: Number, total: Number, completedAt: Date }],
+  quizzes: [{ _id: false, chapterId: String, best: Number, last: Number, total: Number, attempts: { type: Number, default: 0 }, lastAt: Date }],
+  activityDays: [String],
+  lastActiveAt: Date
+});
+learningProgressSchema.index({ parentId: 1, moduleSlug: 1 }, { unique: true });
+
 module.exports = {
   User: mongoose.model('User', userSchema),
   Child: mongoose.model('Child', childSchema),
@@ -121,5 +131,6 @@ module.exports = {
   Routine: mongoose.model('Routine', routineSchema),
   RoutineLog: mongoose.model('RoutineLog', routineLogSchema),
   Activity: mongoose.model('Activity', activitySchema),
-  ActivityFeedback: mongoose.model('ActivityFeedback', activityFeedbackSchema)
+  ActivityFeedback: mongoose.model('ActivityFeedback', activityFeedbackSchema),
+  LearningProgress: mongoose.model('LearningProgress', learningProgressSchema)
 };

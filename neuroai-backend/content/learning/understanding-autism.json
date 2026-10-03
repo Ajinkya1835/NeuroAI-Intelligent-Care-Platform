@@ -1,0 +1,435 @@
+{
+  "slug": "understanding-autism",
+  "order": 1,
+  "title": "Understanding Autism",
+  "level": "Beginner",
+  "summary": "What autism is, why it's called a spectrum, how it's identified, and what to focus on as a parent.",
+  "outcomes": [
+    "What autism is",
+    "Why it is called a spectrum",
+    "Common areas in which autism may affect a child",
+    "Why every autistic child is different",
+    "How autism is identified and diagnosed",
+    "What parents should focus on when supporting their child"
+  ],
+  "keyTakeaways": [
+    "Autism is a developmental condition related to differences in brain development.",
+    "It is called a spectrum because autistic people have different abilities and support needs.",
+    "Autism commonly involves differences in social communication/interaction and restricted or repetitive patterns of behavior or interests.",
+    "Sensory differences and difficulty with changes or transitions can also occur.",
+    "Every autistic child is different.",
+    "Autism does not automatically mean intellectual disability or inability to communicate.",
+    "There is no single blood test for diagnosing autism, and screening is different from diagnosis.",
+    "Autism is not caused by poor parenting, and current evidence does not support vaccines as a cause.",
+    "Parents can support their child best by learning about their individual strengths, needs, preferences, communication, routines and patterns."
+  ],
+  "chapters": [
+    {
+      "id": "c1",
+      "title": "What autism is",
+      "summary": "The basics, in plain language.",
+      "subchapters": [
+        {
+          "id": "c1-s1",
+          "title": "What is autism?",
+          "minutes": 1,
+          "body": "Autism, also called **autism spectrum disorder (ASD)**, is a developmental condition related to differences in how the brain develops.\n\nAutistic children may experience differences in **social communication and interaction**, along with **restricted or repetitive patterns of behavior, interests, or activities**. Some children may also respond to sensory experiences, like sounds, textures, lights, smells or movement, in unusual ways.\n\nAutism begins during development, although characteristics may not always be recognized or diagnosed early.",
+          "takeaway": "Autism does not look the same in every child.",
+          "sources": [
+            { "label": "WHO: Autism spectrum disorders", "url": "https://www.who.int/westernpacific/newsroom/fact-sheets/detail/autism-spectrum-disorders" }
+          ],
+          "questions": [
+            {
+              "id": "c1-s1-q1",
+              "q": "Which statement about autism is correct?",
+              "options": [
+                "Autism looks the same in every child",
+                "Autism is a developmental condition related to differences in how the brain develops",
+                "Autism only appears in adulthood",
+                "Autism is caused by a single event"
+              ],
+              "answer": 1,
+              "explanation": "Autism is developmental and it begins during development, although it may not be recognized or diagnosed early. It looks different from child to child."
+            }
+          ]
+        },
+        {
+          "id": "c1-s2",
+          "title": "Why is it called a \"spectrum\"?",
+          "minutes": 1,
+          "image": "/learning/autism-spectrum.jpg",
+          "body": "The word *spectrum* reflects the wide variation among autistic people.\n\nOne child may communicate using spoken language but have difficulty with social interaction. Another child may communicate differently and need substantial support with daily activities. Some autistic people can live independently, while others need significant lifelong support. Abilities and support needs can also change over time.\n\nThis is why it isn't useful to think of autism simply as \"mild\" or \"severe.\" A better question is:\n\n> **What are this particular child's strengths, challenges, preferences, and support needs?**\n\nThis individual approach is also central to NeuroAI.",
+          "takeaway": "Think strengths, challenges and support needs, not \"mild\" or \"severe\".",
+          "sources": [
+            { "label": "WHO: Autism spectrum disorders", "url": "https://www.who.int/westernpacific/newsroom/fact-sheets/detail/autism-spectrum-disorders" }
+          ],
+          "questions": [
+            {
+              "id": "c1-s2-q1",
+              "q": "Which question is more helpful than asking whether a child's autism is \"mild\" or \"severe\"?",
+              "options": [
+                "What are this child's strengths, challenges, preferences and support needs?",
+                "How quickly will my child catch up to other children?",
+                "Which category does my child fit into?",
+                "How does my child compare to their classmates?"
+              ],
+              "answer": 0,
+              "explanation": "Abilities and support needs vary a lot and can change over time, so looking at the individual child is more useful than a single label."
+            }
+          ]
+        },
+        {
+          "id": "c1-s3",
+          "title": "What areas can autism affect?",
+          "minutes": 2,
+          "body": "Autism is commonly associated with differences in two broad areas.\n\n**1. Social communication and interaction**\n\nA child may find some of these harder:\n\n- Back-and-forth interaction\n- Understanding or using gestures and facial expressions\n- Developing or maintaining social relationships\n- Communicating needs or interests\n\nBut **not every autistic child will have the same communication difficulties**.\n\n**2. Repetitive behaviors, interests and need for sameness**\n\nSome children may:\n\n- Repeat movements or sounds\n- Become strongly interested in particular topics or objects\n- Prefer familiar routines\n- Find changes or transitions difficult\n- Become unusually interested in specific parts of objects\n\n**Sensory differences** can also occur: being especially sensitive, or less sensitive, to sounds, touch, light, taste, smell or other sensations.\n\nThese are examples, not a checklist that every autistic child must match.",
+          "takeaway": "These are examples, not a checklist. No child has to match all of them.",
+          "sources": [
+            { "label": "WHO: Autism spectrum disorders (Q&A)", "url": "https://www.who.int/news-room/questions-and-answers/item/autism-spectrum-disorders-%28asd%29" }
+          ],
+          "questions": [
+            {
+              "id": "c1-s3-q1",
+              "q": "A child strongly prefers familiar routines and finds transitions hard. What does this describe?",
+              "options": [
+                "A common example of repetitive patterns and need for sameness",
+                "A sign of poor parenting",
+                "Proof of an intellectual disability",
+                "A behavior problem that must be corrected"
+              ],
+              "answer": 0,
+              "explanation": "Preferring routines and finding change difficult are common examples of the need for sameness. They are examples, not a checklist."
+            },
+            {
+              "id": "c1-s3-q2",
+              "q": "Will every autistic child have the same communication difficulties?",
+              "options": [
+                "Yes, they all struggle in the same ways",
+                "No, communication differences vary from child to child"
+              ],
+              "answer": 1,
+              "explanation": "Not every autistic child will have the same communication difficulties. Some speak fluently, while others use gestures, pictures or assistive communication."
+            }
+          ]
+        },
+        {
+          "id": "c1-s4",
+          "title": "Every child is different",
+          "minutes": 1,
+          "body": "Two autistic children can have very different abilities and support needs.\n\nFor example, one child might:\n\n- Speak fluently but struggle with social conversations\n- Enjoy predictable routines and become uncomfortable with unexpected changes\n- Be very sensitive to certain sounds\n\nAnother child might:\n\n- Communicate mainly through gestures, pictures, or an assistive communication system\n- Need more support with daily activities\n- Have different sensory preferences\n\nThis is why understanding **the individual child** is more useful than trying to fit them into a fixed description of autism.\n\n> In NeuroAI, details like communication preferences, interests, routines, sensory preferences, what works well, what's difficult, and developmental progress help build a more individual picture of your child.",
+          "takeaway": "Get to know your child as an individual, not as a description.",
+          "sources": [],
+          "questions": [
+            {
+              "id": "c1-s4-q1",
+              "q": "Which information helps build a more individual picture of your child?",
+              "options": [
+                "Communication preferences, interests, routines, sensory preferences, what works and what's difficult",
+                "Only their diagnosis label",
+                "Only how they compare to other children",
+                "Only their school marks"
+              ],
+              "answer": 0,
+              "explanation": "The more you know about how your child communicates, what they enjoy and what is difficult for them, the more individual and useful the picture becomes."
+            }
+          ]
+        },
+        {
+          "id": "c1-s5",
+          "title": "Autism and intellectual disability",
+          "minutes": 1,
+          "body": "Does autism mean intellectual disability?\n\n**No.** The two are not the same thing.\n\nAutistic people have a wide range of cognitive and learning abilities. Some may have significant learning difficulties, while others may have average or above-average intellectual abilities. Communication ability and intellectual ability are also not the same thing.\n\n> Difficulty speaking does not automatically mean a child does not understand something.",
+          "takeaway": "Difficulty speaking does not mean difficulty understanding.",
+          "sources": [],
+          "questions": [
+            {
+              "id": "c1-s5-q1",
+              "q": "A child speaks very little. What can you conclude?",
+              "options": [
+                "Nothing automatically. Difficulty speaking doesn't mean they don't understand",
+                "They don't understand what is said to them",
+                "They have an intellectual disability",
+                "They are not interested in communicating"
+              ],
+              "answer": 0,
+              "explanation": "Communication ability and intellectual ability are different things. A child may understand much more than they can say."
+            }
+          ]
+        }
+      ],
+      "quiz": [
+        {
+          "id": "c1-quiz-q1",
+          "q": "Why is autism described as a spectrum?",
+          "options": [
+            "Because it always becomes more severe over time",
+            "Because autistic people can have different characteristics and support needs",
+            "Because it can be measured on a single scale from mild to severe",
+            "Because every autistic child shows exactly the same traits"
+          ],
+          "answer": 1,
+          "explanation": "Autistic people vary widely in abilities and support needs, and these can change over time."
+        },
+        {
+          "id": "c1-quiz-q2",
+          "q": "Which areas are central to the current description of autism?",
+          "options": [
+            "Height and weight",
+            "Social communication/interaction and restricted or repetitive patterns",
+            "Intelligence and academic performance",
+            "Physical strength and coordination"
+          ],
+          "answer": 1,
+          "explanation": "Autism is commonly described in terms of social communication and interaction, plus restricted or repetitive patterns of behavior, interests or activities."
+        },
+        {
+          "id": "c1-quiz-q3",
+          "q": "Which statement is correct?",
+          "options": [
+            "Every autistic child has delayed speech",
+            "Every autistic child avoids eye contact",
+            "Every autistic child has sensory sensitivity",
+            "Autistic children can have very different characteristics and abilities"
+          ],
+          "answer": 3,
+          "explanation": "There is no single pattern. These are examples that may or may not apply to a particular child."
+        },
+        {
+          "id": "c1-quiz-q4",
+          "q": "Does autism automatically mean intellectual disability?",
+          "options": [
+            "Yes, always",
+            "No, autistic people have a wide range of cognitive and learning abilities",
+            "Only if the child doesn't speak",
+            "Only if it is diagnosed late"
+          ],
+          "answer": 1,
+          "explanation": "Autism and intellectual disability are not the same thing, and communication ability is not the same as intellectual ability."
+        },
+        {
+          "id": "c1-quiz-q5",
+          "q": "Which best describes sensory differences in autism?",
+          "options": [
+            "Some children are more sensitive, others less sensitive, to sounds, touch, light, taste or smell",
+            "Every autistic child is bothered by loud sounds",
+            "Sensory differences only appear in younger children",
+            "Sensory differences mean a child is misbehaving"
+          ],
+          "answer": 0,
+          "explanation": "Sensory responses can go either way, being more or less sensitive, and they differ from child to child."
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "title": "Causes, diagnosis and support",
+      "summary": "What we know, how it's identified, and where to put your focus.",
+      "subchapters": [
+        {
+          "id": "c2-s1",
+          "title": "What causes autism?",
+          "minutes": 1,
+          "body": "There is **no single known cause of autism**.\n\nCurrent evidence indicates that autism involves a combination of genetic and developmental factors. Researchers continue to study how different factors interact during brain development.\n\n> Autism is **not** caused by poor parenting.",
+          "takeaway": "It is not caused by poor parenting.",
+          "sources": [
+            { "label": "WHO: Autism spectrum disorders (Q&A)", "url": "https://www.who.int/news-room/questions-and-answers/item/autism-spectrum-disorders-%28asd%29" }
+          ],
+          "questions": [
+            {
+              "id": "c2-s1-q1",
+              "q": "Which statement about the causes of autism matches current evidence?",
+              "options": [
+                "There is no single known cause; genetic and developmental factors are involved",
+                "Autism is caused by poor parenting",
+                "A single cause has been identified",
+                "Autism is caused by one specific event in early childhood"
+              ],
+              "answer": 0,
+              "explanation": "Current evidence points to a combination of genetic and developmental factors. Poor parenting is not a cause."
+            }
+          ]
+        },
+        {
+          "id": "c2-s2",
+          "title": "Autism and vaccines",
+          "minutes": 1,
+          "body": "This is an important question, because misinformation about autism and vaccines has circulated for many years.\n\nThe World Health Organization's updated 2025–2026 evidence review found **no causal relationship between vaccines and autism**. The review examined research from multiple countries and concluded that the strongest available evidence does not support vaccines as a cause of autism.",
+          "takeaway": "Current evidence shows no causal link between vaccines and autism.",
+          "sources": [
+            { "label": "WHO GACVS statement on vaccines and autism", "url": "https://www.who.int/news/item/11-12-2025-statement-gacvs-vaccines-autism" }
+          ],
+          "questions": [
+            {
+              "id": "c2-s2-q1",
+              "q": "Which statement about vaccines and autism is supported by current WHO evidence?",
+              "options": [
+                "Vaccines are a confirmed cause of autism",
+                "Only some vaccines cause autism",
+                "There is no causal relationship supported by the current evidence",
+                "The relationship is unknown because no research has been conducted"
+              ],
+              "answer": 2,
+              "explanation": "WHO's evidence review of research from multiple countries found no causal relationship between vaccines and autism."
+            }
+          ]
+        },
+        {
+          "id": "c2-s3",
+          "title": "How is autism diagnosed?",
+          "minutes": 2,
+          "body": "There is no blood test or single medical test that can diagnose autism.\n\nProfessionals look at information about the child's **development and behavior**. That includes what parents or caregivers share and what is observed during a professional evaluation. Different assessment tools may be used, but no single tool should be used by itself to establish a diagnosis.\n\n**Screening is not the same as diagnosis**\n\nA developmental or autism screening tool can identify children who may need a closer evaluation. It **does not itself provide an autism diagnosis**.\n\n> If you have developmental concerns, discuss them with an appropriately trained healthcare or developmental professional.",
+          "takeaway": "Screening points to who needs a closer look. It is not a diagnosis.",
+          "sources": [
+            { "label": "CDC: Diagnosis of autism", "url": "https://www.cdc.gov/autism/diagnosis/index.html" }
+          ],
+          "questions": [
+            {
+              "id": "c2-s3-q1",
+              "q": "Is there a blood test that can diagnose autism?",
+              "options": [
+                "Yes, a standard blood test",
+                "No. Professionals consider development and behavior, including what parents share and what they observe",
+                "Yes, a brain scan",
+                "Yes, a short questionnaire on its own"
+              ],
+              "answer": 1,
+              "explanation": "There is no single medical test. Diagnosis draws on development and behavior, parent or caregiver information, and professional observation."
+            },
+            {
+              "id": "c2-s3-q2",
+              "q": "What is the difference between screening and diagnosis?",
+              "options": [
+                "They are exactly the same",
+                "Screening can identify possible concerns, while diagnosis requires a fuller professional evaluation",
+                "Screening provides a final diagnosis",
+                "Diagnosis can be done using only a questionnaire"
+              ],
+              "answer": 1,
+              "explanation": "Screening flags children who may need a closer evaluation. It does not itself give a diagnosis."
+            }
+          ]
+        },
+        {
+          "id": "c2-s4",
+          "title": "Why early attention matters",
+          "minutes": 1,
+          "body": "Developmental monitoring helps parents and professionals notice how a child is developing and whether there are areas where extra support could be useful.\n\nWhen developmental concerns are identified, families can discuss appropriate evaluation and support with professionals. Early support can help children develop skills and can help families understand how best to support their child.\n\n> Early attention does **not** mean trying to change a child into someone else. It means understanding their needs and providing appropriate support.",
+          "takeaway": "Early attention is about understanding and supporting, not changing your child.",
+          "sources": [
+            { "label": "CDC: Diagnosis of autism", "url": "https://www.cdc.gov/autism/diagnosis/index.html" }
+          ],
+          "questions": [
+            {
+              "id": "c2-s4-q1",
+              "q": "What does \"early attention\" mean?",
+              "options": [
+                "Trying to change the child into someone else",
+                "Understanding the child's needs and providing appropriate support",
+                "Waiting until the child is older before doing anything",
+                "Focusing only on the child's weaknesses"
+              ],
+              "answer": 1,
+              "explanation": "It means understanding your child's needs and giving appropriate support, not changing who they are."
+            }
+          ]
+        },
+        {
+          "id": "c2-s5",
+          "title": "What should parents focus on?",
+          "minutes": 2,
+          "body": "Instead of asking:\n\n> **\"What is wrong with my child?\"**\n\na more useful question is:\n\n> **\"What is my child communicating, what are they finding difficult, and what support might help?\"**\n\nYou can learn by observing:\n\n- How your child communicates\n- What activities they enjoy\n- What situations are difficult\n- What sensory experiences affect them\n- How they respond to changes in routine\n- What helps them regulate\n- Which skills are developing\n- What goals matter to your child and family\n\nThis is where **NeuroAI's tracking and learning features** can help. They organize what you record and highlight patterns for you to consider. They should **not diagnose your child or claim that one event causes another**.\n\n**Appropriate:** *\"In the recorded data, episodes occurred more frequently during transitions over the last four weeks.\"*\n\n**Not appropriate:** *\"Transitions are causing your child's episodes.\"*\n\nThe first describes an observed pattern. The second makes a causal or clinical conclusion that recorded data alone may not establish.",
+          "takeaway": "Observe and note patterns. Patterns are not causes or diagnoses.",
+          "sources": [],
+          "questions": [
+            {
+              "id": "c2-s5-q1",
+              "q": "Which question is most useful for a parent to ask?",
+              "options": [
+                "What is wrong with my child?",
+                "What is my child communicating, what are they finding difficult, and what support might help?",
+                "Why did this happen to us?",
+                "How do I make my child act like other children?"
+              ],
+              "answer": 1,
+              "explanation": "This question moves the focus to your child's communication, difficulties and the support that could help."
+            },
+            {
+              "id": "c2-s5-q2",
+              "q": "Which is the most appropriate NeuroAI insight?",
+              "options": [
+                "\"Your child's behavior is caused by routine changes.\"",
+                "\"Your child has a behavioral disorder.\"",
+                "\"Recorded episodes occurred more frequently on days with routine changes.\"",
+                "\"Your child should stop attending school.\""
+              ],
+              "answer": 2,
+              "explanation": "It describes an observed pattern in the recorded data without claiming a cause or making a clinical conclusion."
+            }
+          ]
+        }
+      ],
+      "quiz": [
+        {
+          "id": "c2-quiz-q1",
+          "q": "A friend says autism is caused by bad parenting. What's the best response?",
+          "options": [
+            "That isn't supported. Autism is not caused by poor parenting",
+            "Possibly, if the parent was strict",
+            "Partly true",
+            "It depends on how the child was raised"
+          ],
+          "answer": 0,
+          "explanation": "Autism involves genetic and developmental factors. It is not caused by poor parenting."
+        },
+        {
+          "id": "c2-quiz-q2",
+          "q": "A routine developmental screening flags a possible concern. What does that mean?",
+          "options": [
+            "The child has been diagnosed",
+            "The child may need a closer evaluation by a trained professional",
+            "Screening results never matter",
+            "The child definitely does not have autism"
+          ],
+          "answer": 1,
+          "explanation": "Screening can identify children who may need a closer evaluation. It is not a diagnosis either way."
+        },
+        {
+          "id": "c2-quiz-q3",
+          "q": "Why shouldn't NeuroAI say \"transitions are causing your child's episodes\"?",
+          "options": [
+            "Recorded data alone may not establish a cause. It can describe patterns, not make causal or clinical conclusions",
+            "Because transitions never matter",
+            "Because the recorded data is always wrong",
+            "Because only therapists can see the data"
+          ],
+          "answer": 0,
+          "explanation": "A pattern in the data is not proof of cause. NeuroAI describes what was recorded and leaves conclusions to you and your professionals."
+        },
+        {
+          "id": "c2-quiz-q4",
+          "q": "Which is most useful to note down about your child?",
+          "options": [
+            "What situations are difficult and what helps them regulate",
+            "What other parents think of their behavior",
+            "Only the days without difficulties",
+            "Only their test marks"
+          ],
+          "answer": 0,
+          "explanation": "Noticing difficult situations and what helps your child regulate gives you a practical picture of their needs."
+        },
+        {
+          "id": "c2-quiz-q5",
+          "q": "Which best describes early support?",
+          "options": [
+            "It aims to make a child act like other children",
+            "It can help children develop skills and help families understand how best to support them",
+            "It only works after a formal diagnosis",
+            "It replaces the need to understand the child as an individual"
+          ],
+          "answer": 1,
+          "explanation": "Early support helps children build skills and helps families understand how to support their child."
+        }
+      ]
+    }
+  ]
+}
