@@ -83,7 +83,11 @@ const routineSchema = new Schema({
   title: { type: String, required: true },
   category: String,
   scheduleTime: String,
-  completed: { type: Boolean, default: false }
+  completed: { type: Boolean, default: false },
+  steps: [String],
+  days: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
+  active: { type: Boolean, default: true },
+  supports: String
 });
 
 const routineLogSchema = new Schema({
@@ -98,8 +102,19 @@ const activitySchema = new Schema({
   description: String,
   minAge: Number,
   maxAge: Number,
-  tags: [String]
+  tags: [String],
+  minutes: Number,
+  materials: [String],
+  steps: [String]
 });
+const activityPlanSchema = new Schema({
+  childId: oid('Child'),
+  activityId: oid('Activity'),
+  kind: { type: String, enum: ['favorite', 'planned'], required: true },
+  date: String,
+  done: { type: Boolean, default: false }
+});
+activityPlanSchema.index({ childId: 1, activityId: 1, kind: 1, date: 1 });
 
 const activityFeedbackSchema = new Schema({
   activityId: oid('Activity'),
@@ -152,6 +167,7 @@ module.exports = {
   Routine: mongoose.model('Routine', routineSchema),
   RoutineLog: mongoose.model('RoutineLog', routineLogSchema),
   Activity: mongoose.model('Activity', activitySchema),
+  ActivityPlan: mongoose.model('ActivityPlan', activityPlanSchema),
   ActivityFeedback: mongoose.model('ActivityFeedback', activityFeedbackSchema),
   LearningProgress: mongoose.model('LearningProgress', learningProgressSchema),
   TeachingSubmission: mongoose.model('TeachingSubmission', teachingSubmissionSchema)

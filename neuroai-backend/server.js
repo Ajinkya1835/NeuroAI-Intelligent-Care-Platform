@@ -302,6 +302,7 @@ app.post('/api/ai/chat', async (req, res) => {
 require('./profile')(app);
 require('./insights')(app);
 require('./therapist')(app);
+require('./care')(app);
 require('./learning')(app);
 require('./teaching')(app);
 

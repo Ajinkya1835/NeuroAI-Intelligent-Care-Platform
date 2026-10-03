@@ -229,17 +229,18 @@ async function learningProgress(parent) {
 }
 
 const ACTIVITIES = [
-  { title: 'Bubble Breathing', category: 'Regulation', description: 'Slow breaths while blowing bubbles.', minAge: 3, maxAge: 10, tags: ['calming'] },
-  { title: 'Sort by Color', category: 'Focus', description: 'Sort small objects by color into cups.', minAge: 3, maxAge: 8, tags: ['focus'] },
-  { title: 'Quiet Reading Nook', category: 'Sensory', description: 'Build a low-stimulation corner with cushions and soft light.', minAge: 4, maxAge: 12, tags: ['sensory'] },
-  { title: 'Train Track Counting', category: 'Early Math', description: 'Count wooden train carriages together, 1 to 5.', minAge: 4, maxAge: 8, tags: ['focus', 'interests'] },
-  { title: 'Water Play Calm-down', category: 'Sensory', description: 'Warm water, cups and funnels in a quiet space.', minAge: 3, maxAge: 9, tags: ['sensory', 'calming'] },
-  { title: 'Feelings Cards', category: 'Emotions', description: "Match face cards to how we feel and point to today's feeling.", minAge: 4, maxAge: 9, tags: ['emotions'] }
+  { title: 'Bubble Breathing', category: 'Regulation', description: 'Slow breaths while blowing bubbles.', minAge: 3, maxAge: 10, tags: ['calming'], minutes: 5, materials: ["Bubble wand and solution"], steps: ["Sit side by side", "Show one slow breath in", "Blow one long bubble out", "Count bubbles together, five times"] },
+  { title: 'Sort by Color', category: 'Focus', description: 'Sort small objects by color into cups.', minAge: 3, maxAge: 8, tags: ['focus'], minutes: 8, materials: ["Small cups", "Colored blocks or buttons"], steps: ["Start with only two colors", "Name the color as you place each item", "Add a third color when two feel easy"] },
+  { title: 'Quiet Reading Nook', category: 'Sensory', description: 'Build a low-stimulation corner with cushions and soft light.', minAge: 4, maxAge: 12, tags: ['sensory'], minutes: 15, materials: ["Cushions", "Soft lamp", "Two favorite books"], steps: ["Build the nook together", "Dim other lights", "Read one short book, then stop on a good note"] },
+  { title: 'Train Track Counting', category: 'Early Math', description: 'Count wooden train carriages together, 1 to 5.', minAge: 4, maxAge: 8, tags: ['focus', 'interests'], minutes: 10, materials: ["Wooden train carriages"], steps: ["Line up carriages", "Point and count 1 to 5 together", "Let your child push the train after each count"] },
+  { title: 'Water Play Calm-down', category: 'Sensory', description: 'Warm water, cups and funnels in a quiet space.', minAge: 3, maxAge: 9, tags: ['sensory', 'calming'], minutes: 15, materials: ["Basin", "Warm water", "Cups and funnels"], steps: ["Fill the basin with warm water", "Pour slowly together", "Keep the room quiet, few words"] },
+  { title: 'Feelings Cards', category: 'Emotions', description: "Match face cards to how we feel and point to today's feeling.", minAge: 4, maxAge: 9, tags: ['emotions'], minutes: 10, materials: ["Printed face cards"], steps: ["Lay out 3 faces: happy, sad, upset", "Ask them to point to today's feeling", "Name it back, no follow-up questions"] }
 ];
 
 async function activities(child) {
   for (const a of ACTIVITIES) {
-    await M.Activity.updateOne({ title: a.title }, { $setOnInsert: a }, { upsert: true });
+    const { minutes, materials, steps, ...base } = a;
+    await M.Activity.updateOne({ title: a.title }, { $setOnInsert: base, $set: { minutes, materials, steps } }, { upsert: true });
   }
   if (await M.ActivityFeedback.countDocuments({ childId: child._id })) return;
   const byTitle = Object.fromEntries((await M.Activity.find({ title: { $in: ACTIVITIES.map((a) => a.title) } })).map((a) => [a.title, a]));

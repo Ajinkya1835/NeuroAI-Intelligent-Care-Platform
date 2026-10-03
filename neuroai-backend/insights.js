@@ -150,6 +150,41 @@ module.exports = function registerInsights(app) {
     res.status(400).json({ error: 'Invalid child id' }); return false;
   };
 
+  app.get('/api/children/:id/insights/report', async (req, res) => {
+    try {
+      if (!ok(req, res)) return;
+      const p = await buildProfile(req.params.id, 90);
+      if (!p) return res.status(404).json({ error: 'Child not found' });
+      const findings = analyze(p);
+      const stats = p.episodes.stats;
+      const toCard = (finding) => ({ id: finding.id, title: finding.title, detail: finding.detail, suggestion: finding.suggestion });
+      const actions = findings.filter((finding) => finding.suggestion).slice(0, 5).map((finding) => ({
+        when: finding.kind === 'watch' ? 'This week' : 'Ongoing',
+        title: finding.title,
+        how: finding.suggestion
+      }));
+      const changed = [
+        { title: 'Episodes', now: stats.total || 0, before: null, delta: null, tone: stats.total > 0 ? 'watch' : 'good' },
+        { title: 'Average intensity', now: stats.avgIntensity ?? '—', before: stats.firstHalfAvgIntensity ?? null, delta: stats.recentAvgIntensity != null && stats.firstHalfAvgIntensity != null ? Number((stats.recentAvgIntensity - stats.firstHalfAvgIntensity).toFixed(1)) : null, tone: stats.trend === 'improving' ? 'good' : stats.trend === 'worsening' ? 'watch' : 'neutral' },
+        { title: 'Days since episode', now: stats.daysSinceLast ?? '—', before: null, delta: null, tone: stats.daysSinceLast >= 7 ? 'good' : 'neutral' }
+      ];
+      res.json({
+        dataVersion: p.dataVersion,
+        generatedAt: p.generatedAt,
+        headline: stats.total ? `${p.child.name} has ${stats.total} logged episode${stats.total === 1 ? '' : 's'} in the last ${p.rangeDays} days.` : `No episodes have been logged for ${p.child.name} in the last ${p.rangeDays} days.`,
+        dataQuality: { level: stats.total >= 5 ? 'good' : stats.total ? 'ok' : 'low', note: stats.total >= 5 ? 'Enough recent data for useful patterns' : 'Keep logging to improve pattern quality' },
+        summary: stats.total ? `Average intensity is ${stats.avgIntensity}/5 and the recent trend is ${stats.trend}.` : 'Keep logging episodes, routines and supports so patterns can be identified.',
+        changed,
+        working: findings.filter((finding) => finding.kind === 'positive').map(toCard),
+        watch: findings.filter((finding) => finding.kind !== 'positive').map(toCard),
+        risk: findings.filter((finding) => finding.kind === 'watch').map((finding) => ({ label: finding.title, detail: finding.detail })),
+        clinical: (p.notes || []).filter((note) => note.authorRole === 'Therapist').slice(0, 8).map((note) => ({ title: `${note.author} - ${new Date(note.ts).toLocaleDateString()}`, detail: note.text })),
+        actions,
+        questions: findings.filter((finding) => finding.kind === 'watch').slice(0, 3).map((finding) => `What support could we try for: ${finding.title}?`)
+      });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
+
   app.get('/api/children/:id/insights', async (req, res) => {
     try {
       if (!ok(req, res)) return;

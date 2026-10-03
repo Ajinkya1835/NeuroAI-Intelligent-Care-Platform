@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Home, AlertTriangle, Calendar, Activity, Award, Users, Pencil,
-  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap, LogOut, Target, Phone, Mail, UserCircle
+  Plus, ShieldAlert, ClipboardList, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap, LogOut, Target, Phone, Mail, UserCircle
 } from 'lucide-react';
 import { API, authFetch, getSession, logout, type SessionUser } from './lib/auth';
 import LearningHub from './components/learning/LearningHub';
@@ -12,13 +12,22 @@ import LearningSummaryCard from './components/learning/LearningSummaryCard';
 import TeachingHub from './components/teaching/TeachingHub';
 import TeachingSummaryCard from './components/teaching/TeachingSummaryCard';
 import ProfileHub from './components/profile/ProfileHub';
+import Routines from './components/care/Routines';
+import Patterns from './components/care/Patterns';
+import Activities from './components/care/Activities';
+import Episodes from './components/care/Episodes';
+import TodayCard from './components/care/TodayCard';
+import AIInsights from './components/care/AIInsights';
+import TherapistHub from './components/care/TherapistHub';
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'clinic', label: 'Caseload', icon: ClipboardList },
   { id: 'profile', label: 'Profile', icon: UserCircle },
   { id: 'logger', label: 'Episodes', icon: AlertTriangle },
   { id: 'routines', label: 'Routines', icon: Calendar },
   { id: 'insights', label: 'Patterns', icon: Activity },
+  { id: 'ai', label: 'AI insights', icon: Sparkles },
   { id: 'activities', label: 'Activities', icon: Award },
   { id: 'learn', label: 'Learn', icon: GraduationCap },
   { id: 'teach', label: 'Teach', icon: Pencil },
@@ -109,6 +118,7 @@ export default function NeuroAIDashboard() {
   const [step, setStep] = useState(1);
   const [log, setLog] = useState(emptyLog);
   const [saving, setSaving] = useState(false);
+  const [epVersion, setEpVersion] = useState(0);
 
   const [sosOpen, setSosOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -118,6 +128,7 @@ export default function NeuroAIDashboard() {
   const [chatInput, setChatInput] = useState('');
 
   const [noteText, setNoteText] = useState('');
+  const [notePrivate, setNotePrivate] = useState(false);
 
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
@@ -162,6 +173,7 @@ export default function NeuroAIDashboard() {
     const s = getSession();
     if (!s) { router.replace('/login'); return; }
     setUser(s.user);
+    if (s.user.role === 'therapist') setTab('clinic');
   }, [router]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
@@ -178,6 +190,7 @@ export default function NeuroAIDashboard() {
       await post('/api/episodes', { ...log, childId: child._id, ts: new Date().toISOString() });
       setLogOpen(false); setStep(1); setLog(emptyLog);
       say('Episode saved');
+      setEpVersion((v) => v + 1);
       load();
     } catch { say('Could not save. Is the backend running?'); }
     setSaving(false);
@@ -197,7 +210,7 @@ export default function NeuroAIDashboard() {
   const addNote = async () => {
     if (!noteText.trim()) return;
     try {
-      await post(`/api/children/${child._id}/notes`, { text: noteText.trim() });
+      await post(`/api/children/${child._id}/notes`, { text: noteText.trim(), private: isTherapist && notePrivate });
       setNoteText(''); say('Note added'); load(true);
     } catch { say('Could not add note'); }
   };
@@ -220,18 +233,21 @@ export default function NeuroAIDashboard() {
 
   const isTherapist = user.role === 'therapist';
   // the parent lessons are for the parent only
-  const tabs = TABS.filter((t) => !(isTherapist && t.id === 'learn'));
+  const tabs = TABS.filter((t) => !(isTherapist && t.id === 'learn') && !(!isTherapist && t.id === 'clinic'));
 
-  const maxTrig = Math.max(1, ...patterns.triggerCounts.map((t: any) => t.count));
-  const maxLoc = Math.max(1, ...patterns.locationCounts.map((t: any) => t.count));
+  const lastEp = episodes[0];
+  const daysAgo = lastEp ? Math.floor((Date.now() - new Date(lastEp.ts).getTime()) / 864e5) : 0;
+  const weekAgo = Date.now() - 7 * 864e5, twoWeeks = Date.now() - 14 * 864e5;
+  const weekCount = episodes.filter((e) => new Date(e.ts).getTime() >= weekAgo).length;
+  const prevWeekCount = episodes.filter((e) => { const t = new Date(e.ts).getTime(); return t >= twoWeeks && t < weekAgo; }).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-slate-50 text-slate-800 antialiased">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center">🧠</div>
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg" aria-hidden>N</div>
             <div>
               <div className="font-bold leading-tight">NeuroAI</div>
               {kidList.length > 1 ? (
@@ -251,14 +267,16 @@ export default function NeuroAIDashboard() {
             <button onClick={() => load()} title="Refresh" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">
               <RefreshCw className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={() => setLogOpen(true)} disabled={!child}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
-              <Plus className="w-4 h-4" /> Log episode
-            </button>
-            <button onClick={() => setSosOpen(true)}
-              className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4" /> SOS
-            </button>
+            {!isTherapist && <>
+              <button onClick={() => setLogOpen(true)} disabled={!child}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
+                <Plus className="w-4 h-4" /> Log episode
+              </button>
+              <button onClick={() => setSosOpen(true)}
+                className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4" /> SOS
+              </button>
+            </>}
             <div className="hidden sm:block text-right leading-tight pl-2 ml-1 border-l border-slate-200">
               <div className="text-sm font-medium">{user.name}</div>
               <div className="text-[11px] text-slate-500 capitalize">{user.role}</div>
@@ -309,34 +327,42 @@ export default function NeuroAIDashboard() {
           {/* DASHBOARD */}
           {child && tab === 'dashboard' && (
             <div className="space-y-5">
+              <div>
+                <h2 className="text-2xl font-bold">{new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'}, {user.name.split(' ')[0]}</h2>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {patterns.totalEpisodes === 0 ? `Nothing logged for ${child.name} yet.`
+                    : lastEp ? `${child.name}'s last episode was ${daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`}.` : ''}
+                </p>
+              </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { l: 'Avg intensity', v: `${patterns.avgIntensity}/5` },
-                  { l: 'Episodes logged', v: patterns.totalEpisodes },
-                  { l: 'Top trigger', v: patterns.triggerCounts[0]?.name || '—', small: true },
-                  { l: 'Routines done', v: `${patterns.routineSuccessRate}%` },
-                ].map((s) => (
+                  { l: 'Episodes this week', v: weekCount, sub: weekCount === prevWeekCount ? 'same as last week' : `${weekCount > prevWeekCount ? '+' : ''}${weekCount - prevWeekCount} vs last week`, good: weekCount <= prevWeekCount },
+                  { l: 'Avg intensity', v: `${patterns.avgIntensity}/5`, sub: `${patterns.totalEpisodes} logged in total` },
+                  { l: 'Top trigger', v: patterns.triggerCounts[0]?.name || '–', small: true, sub: patterns.triggerCounts[0] ? `${patterns.triggerCounts[0].count} episodes` : '' },
+                  { l: 'Routines today', v: `${patterns.routineSuccessRate}%`, sub: 'marked done' },
+                ].map((s: any) => (
                   <Card key={s.l} className="!p-4">
                     <div className="text-xs text-slate-500">{s.l}</div>
-                    <div className={`font-bold mt-1 ${s.small ? 'text-base truncate' : 'text-2xl'}`}>{s.v}</div>
+                    <div className={`font-bold mt-1 ${s.small ? 'text-base leading-snug' : 'text-3xl'}`}>{s.v}</div>
+                    {s.sub && <div className={`text-[11px] mt-1 ${s.good === false ? 'text-amber-700' : s.good ? 'text-emerald-700' : 'text-slate-500'}`}>{s.sub}</div>}
                   </Card>
                 ))}
               </div>
 
+              <div className="grid lg:grid-cols-2 gap-5 items-start">
+                <TodayCard childId={child._id} onOpen={() => setTab('routines')} version={epVersion} readOnly={isTherapist} />
+                <Card>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
+                    <Sparkles className="w-4 h-4" /> Pattern insight
+                    {insight && <span className="ml-auto text-xs font-normal text-slate-400">{insight.source === 'ollama' ? 'AI generated' : 'From your logs'}</span>}
+                  </div>
+                  <p className="text-sm text-slate-700 mt-2 whitespace-pre-line">{insight ? insight.text : 'Analyzing recent episodes…'}</p>
+                  <button onClick={() => setTab('insights')} className="mt-3 text-sm font-medium text-indigo-700">See all patterns</button>
+                </Card>
+              </div>
+
               {child.parentId && !isTherapist && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
               {child.parentId && <TeachingSummaryCard childId={child._id} parentId={child.parentId} onOpen={() => setTab('teach')} />}
-
-              <Card>
-                <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
-                  <Sparkles className="w-4 h-4" /> Pattern insight
-                  {insight && (
-                    <span className="ml-auto text-xs font-normal text-slate-400">
-                      {insight.source === 'ollama' ? 'AI generated' : 'Stats summary'}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-slate-700 mt-2 whitespace-pre-line">{insight ? insight.text : 'Analyzing recent episodes…'}</p>
-              </Card>
 
               <Card>
                 <h3 className="font-semibold mb-3">Recent activity</h3>
@@ -366,129 +392,13 @@ export default function NeuroAIDashboard() {
             </div>
           )}
 
-          {/* EPISODES */}
-          {child && tab === 'logger' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold">Episodes</h2>
-                <button onClick={() => setLogOpen(true)} className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium">+ New episode</button>
-              </div>
-              {episodes.length === 0 ? <Card><p className="text-sm text-slate-400">No episodes yet.</p></Card> :
-                episodes.map((e) => (
-                  <Card key={e._id} className="!p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-sm">{e.trigger || 'Unknown trigger'}</div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        e.intensity >= 4 ? 'bg-rose-100 text-rose-700' : e.intensity === 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        Intensity {e.intensity}/5
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      {fmt(e.ts)} · {[e.location, e.activity].filter(Boolean).join(' · ')}
-                      {e.durationMinutes ? ` · ${e.durationMinutes} min` : ''}
-                    </div>
-                    {(e.behaviors?.length > 0 || e.calmingInterventions?.length > 0) && (
-                      <div className="text-xs text-slate-600 mt-2 space-y-0.5">
-                        {e.behaviors?.length > 0 && <div><b>Behaviors:</b> {e.behaviors.join(', ')}</div>}
-                        {e.calmingInterventions?.length > 0 && <div><b>What helped:</b> {e.calmingInterventions.join(', ')}</div>}
-                      </div>
-                    )}
-                  </Card>
-                ))}
-            </div>
-          )}
-
-          {/* ROUTINES */}
-          {child && tab === 'routines' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">Routines</h2>
-              <Card className="!p-2">
-                {routines.length === 0 ? <p className="text-sm text-slate-400 p-3">No routines yet.</p> :
-                  routines.map((r) => (
-                    <label key={r._id} className="flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer">
-                      <span className="flex items-center gap-3">
-                        <input type="checkbox" checked={!!r.completed}
-                          onChange={(e) => toggleRoutine(r._id, e.target.checked)}
-                          className="w-5 h-5 accent-indigo-600" />
-                        <span className={`text-sm ${r.completed ? 'line-through text-slate-400' : ''}`}>{r.title}</span>
-                      </span>
-                      <span className="text-xs text-slate-500">{r.scheduleTime || r.category}</span>
-                    </label>
-                  ))}
-              </Card>
-            </div>
-          )}
-
-          {/* PATTERNS */}
-          {child && tab === 'insights' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">Patterns</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {[
-                  { title: 'Triggers', data: patterns.triggerCounts, max: maxTrig, color: 'bg-rose-400' },
-                  { title: 'Locations', data: patterns.locationCounts, max: maxLoc, color: 'bg-indigo-400' },
-                ].map((g) => (
-                  <Card key={g.title}>
-                    <h3 className="font-semibold mb-3">{g.title}</h3>
-                    {g.data.length === 0 ? <p className="text-sm text-slate-400">No data yet.</p> :
-                      <div className="space-y-3">
-                        {g.data.map((d: any) => (
-                          <div key={d.name}>
-                            <div className="flex justify-between text-sm mb-1"><span>{d.name}</span><span className="text-slate-500">{d.count}</span></div>
-                            <div className="h-2 bg-slate-100 rounded-full">
-                              <div className={`h-2 rounded-full ${g.color}`} style={{ width: `${(d.count / g.max) * 100}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>}
-                  </Card>
-                ))}
-              </div>
-
-              <Card>
-                <h3 className="font-semibold mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-indigo-600" /> Goals</h3>
-                {goals.length === 0 ? <p className="text-sm text-slate-400">No goals set yet.</p> :
-                  <div className="space-y-4">
-                    {goals.map((g) => {
-                      const pct = Math.min(100, Math.round((g.currentScore / (g.targetScore || 100)) * 100));
-                      const reached = g.currentScore >= g.targetScore;
-                      return (
-                        <div key={g._id}>
-                          <div className="flex justify-between gap-3 text-sm mb-1">
-                            <span><span className="font-medium">{g.title}</span> <span className="text-xs text-slate-400">· {g.area}</span></span>
-                            <span className={`shrink-0 ${reached ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>{g.currentScore}/{g.targetScore}{reached ? ' ✓' : ''}</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full">
-                            <div className={`h-2 rounded-full ${reached ? 'bg-emerald-500' : 'bg-indigo-400'}`} style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>}
-              </Card>
-            </div>
-          )}
-
-          {/* ACTIVITIES */}
-          {child && tab === 'activities' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold">Suggested activities</h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                {activities.map((a) => (
-                  <Card key={a._id} className="flex flex-col justify-between">
-                    <div>
-                      <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded">{a.category}</span>
-                      <h3 className="font-semibold mt-2">{a.title}</h3>
-                      <p className="text-sm text-slate-500 mt-1">{a.description}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mt-4">
-                      <button onClick={() => feedback(a._id, 'Completed')} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium py-2 rounded-lg">Completed</button>
-                      <button onClick={() => feedback(a._id, 'Too Difficult')} className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium py-2 rounded-lg">Too hard</button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+          {child && tab === 'logger' && <Episodes childId={child._id} onLog={() => setLogOpen(true)} toast={say} version={epVersion} readOnly={isTherapist} />}
+          {child && tab === 'routines' && <Routines key={child._id} childId={child._id} toast={say} therapist={isTherapist} />}
+          {child && tab === 'insights' && <Patterns childId={child._id} name={child.name} />}
+          {child && tab === 'activities' && <Activities key={child._id} childId={child._id} name={child.name} toast={say} readOnly={isTherapist} />}
+          {child && tab === 'ai' && <AIInsights key={child._id} childId={child._id} name={child.name} role={user.role} />}
+          {isTherapist && child && tab === 'clinic' && (
+            <TherapistHub activeId={child._id} onPick={(id) => { activeRef.current = id; setInsight(null); load(); }} toast={say} />
           )}
 
           {/* LEARN */}
@@ -546,12 +456,18 @@ export default function NeuroAIDashboard() {
                     placeholder="Write a note…" className={inputCls} />
                   <button onClick={addNote} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Add</button>
                 </div>
+                {isTherapist && (
+                  <label className="flex items-center gap-2 text-xs text-slate-600 -mt-2 mb-4">
+                    <input type="checkbox" checked={notePrivate} onChange={(e) => setNotePrivate(e.target.checked)} className="accent-indigo-600" />
+                    Private note (only therapists can see it)
+                  </label>
+                )}
                 {notes.length === 0 ? <p className="text-sm text-slate-400">No notes yet.</p> :
                   <ul className="divide-y divide-slate-100">
                     {notes.map((n) => (
                       <li key={n._id} className="py-3">
                         <div className="flex justify-between text-xs text-slate-500">
-                          <span>{n.author}{n.authorRole ? ` · ${n.authorRole}` : ''}</span><span>{fmt(n.ts)}</span>
+                          <span>{n.author}{n.authorRole ? ` · ${n.authorRole}` : ''}{n.private ? ' · Private' : ''}</span><span>{fmt(n.ts)}</span>
                         </div>
                         <p className="text-sm mt-1">{n.text}</p>
                       </li>
@@ -564,10 +480,10 @@ export default function NeuroAIDashboard() {
       </div>
 
       {/* Bottom tabs (mobile) */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex overflow-x-auto">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex-1 min-w-0 py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
+            className={`flex-1 min-w-[4.5rem] py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
             <Icon className="w-5 h-5" /><span className="max-w-full truncate px-0.5">{label}</span>
           </button>
         ))}
