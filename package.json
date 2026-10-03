@@ -1,0 +1,16 @@
+{
+  "name": "neuroai",
+  "private": true,
+  "scripts": {
+    "setup": "npm i && npm --prefix neuroai-backend i && npm --prefix main i",
+    "seed": "npm --prefix neuroai-backend run seed",
+    "seed:reset": "npm --prefix neuroai-backend run seed -- --force",
+    "backend": "npm --prefix neuroai-backend start",
+    "frontend": "npm --prefix main run dev",
+    "predev": "npx --yes kill-port 5000 3000",
+    "dev": "npm run seed && concurrently -n api,web -c blue,green \"npm:backend\" \"npm:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

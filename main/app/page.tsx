@@ -1,667 +1,606 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Activity, AlertTriangle, BookOpen, Calendar, CheckCircle2, 
-  ChevronRight, Clock, Heart, Home, MessageSquare, Plus, 
-  ShieldAlert, Sparkles, UserCheck, Users, X, Send, Award, Filter
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Home, AlertTriangle, Calendar, Activity, Award, Users,
+  Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff
 } from 'lucide-react';
 
-const CHILD_ID = '6abaa8074d399b7bd373cb2a';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'logger', label: 'Episodes', icon: AlertTriangle },
+  { id: 'routines', label: 'Routines', icon: Calendar },
+  { id: 'insights', label: 'Patterns', icon: Activity },
+  { id: 'activities', label: 'Activities', icon: Award },
+  { id: 'therapist', label: 'Therapist', icon: Users },
+];
+
+const BEHAVIORS = ['Covering ears', 'Crying', 'Screaming', 'Hitting', 'Running away', 'Shutting down', 'Rocking'];
+const CALMING = ['Weighted Blanket', 'Noise Canceling Headphones', 'Deep Breathing', 'Quiet Room', 'Favorite Toy', 'Deep Pressure Hug'];
+const CHAT_PRESETS = ['Top triggers?', 'When do episodes happen?', 'Latest episode?', 'Pending routines?', 'Therapist notes?', 'How do I log an episode?'];
+
+const api = async (path: string, init?: RequestInit) => {
+  const res = await fetch(`${API}${path}`, init);
+  if (!res.ok) throw new Error(`${res.status} ${path}`);
+  return res.json();
+};
+const post = (path: string, body: any, method = 'POST') =>
+  api(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+const fmt = (d: string) =>
+  new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+const emptyLog = {
+  location: 'Home', activity: '', trigger: '', sensoryEnvironment: 'Normal',
+  sleepHours: 8, hungerLevel: 'Normal', behaviors: [] as string[], intensity: 3,
+  durationMinutes: 10, response: '', recoveryMinutes: 10,
+  calmingInterventions: [] as string[], postEpisodeBehavior: ''
+};
+
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`bg-white rounded-xl border border-slate-200 p-5 ${className}`}>{children}</div>;
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-slate-600">{label}</span>
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}
+
+const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500';
+
+function Chips({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => {
+        const on = value.includes(o);
+        return (
+          <button
+            key={o} type="button"
+            onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+              on ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function NeuroAIDashboard() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [isEmergencyOpen, setIsEmergencyOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
-  
-  // Data States
-  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
-  const [patterns, setPatterns] = useState<any>({ avgIntensity: 0, triggers: [], locations: [], totalEpisodes: 0 });
+  const [tab, setTab] = useState('dashboard');
+  const [status, setStatus] = useState<'loading' | 'ok' | 'error' | 'empty'>('loading');
+  const [errMsg, setErrMsg] = useState('');
+  const [toast, setToast] = useState('');
+
+  const [child, setChild] = useState<any>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [episodes, setEpisodes] = useState<any[]>([]);
+  const [patterns, setPatterns] = useState<any>({ avgIntensity: 0, totalEpisodes: 0, triggerCounts: [], locationCounts: [], routineSuccessRate: 0 });
   const [routines, setRoutines] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
-  const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([
-    { sender: 'ai', text: 'Hello! I am your NeuroAI Assistant. How can I help you support Alex today?' }
+  const [notes, setNotes] = useState<any[]>([]);
+  const [team, setTeam] = useState<any>({ parent: null, therapists: [] });
+  const [insight, setInsight] = useState<{ text: string; source: string } | null>(null);
+
+  const [logOpen, setLogOpen] = useState(false);
+  const [step, setStep] = useState(1);
+  const [log, setLog] = useState(emptyLog);
+  const [saving, setSaving] = useState(false);
+
+  const [sosOpen, setSosOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chat, setChat] = useState<{ sender: string; text: string }[]>([
+    { sender: 'ai', text: "Hi! Ask me about Alex's episodes, triggers, routines or how to use the app." },
   ]);
   const [chatInput, setChatInput] = useState('');
 
-  // Meltdown Log Form State
-  const [logForm, setLogForm] = useState({
-    childId: CHILD_ID,
-    ts: new Date().toISOString().substring(0, 16),
-    location: 'Home',
-    activity: 'Transitioning to lunch',
-    sensoryEnvironment: 'Loud',
-    sleepHours: 8,
-    hungerLevel: 'Moderate',
-    trigger: 'Sudden Noise',
-    behaviors: ['Covering ears', 'Crying'],
-    intensity: 3,
-    durationMinutes: 15,
-    response: 'Moved to quiet room',
-    recoveryMinutes: 20,
-    calmingInterventions: ['Weighted Blanket', 'Noise Canceling Headphones'],
-    postEpisodeBehavior: 'Calm but fatigued'
-  });
+  const [noteText, setNoteText] = useState('');
+  const [noteAs, setNoteAs] = useState<'Parent' | 'Therapist'>('Parent');
 
-  useEffect(() => {
-    fetchTimeline();
-    fetchPatterns();
-    fetchRoutines();
-    fetchActivities();
+  const say = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setStatus('loading');
+    try {
+      const kids = await api('/api/children');
+      if (!kids.length) { setStatus('empty'); return; }
+      const c = kids[0];
+      setChild(c);
+      const id = c._id;
+      const [t, e, p, r, a, n, tm] = await Promise.all([
+        api(`/api/children/${id}/timeline`),
+        api(`/api/children/${id}/episodes`),
+        api(`/api/children/${id}/patterns`),
+        api(`/api/children/${id}/routines`),
+        api('/api/activities'),
+        api(`/api/children/${id}/notes`),
+        api(`/api/children/${id}/team`),
+      ]);
+      setTimeline(t); setEpisodes(e); setPatterns(p); setRoutines(r);
+      setActivities(a); setNotes(n); setTeam(tm);
+      setStatus('ok');
+      if (!silent) {
+        post('/api/ai/analyze', { childId: id })
+          .then((d) => setInsight({ text: d.analysis, source: d.source }))
+          .catch(() => {});
+      }
+    } catch (err: any) {
+      setErrMsg(err.message || 'Failed to fetch');
+      if (!silent) setStatus('error');
+    }
   }, []);
 
-  const fetchTimeline = async () => {
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const t = setInterval(() => load(true), 30000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const saveEpisode = async () => {
+    if (!child) return;
+    setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/children/${CHILD_ID}/timeline`);
-      const data = await res.json();
-      if (Array.isArray(data)) setTimelineEvents(data);
-    } catch (e) {
-      console.error('Failed to fetch timeline', e);
-    }
+      await post('/api/episodes', { ...log, childId: child._id, ts: new Date().toISOString() });
+      setLogOpen(false); setStep(1); setLog(emptyLog);
+      say('Episode saved');
+      load();
+    } catch { say('Could not save. Is the backend running?'); }
+    setSaving(false);
   };
 
-  const fetchPatterns = async () => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/children/${CHILD_ID}/patterns`);
-      const data = await res.json();
-      setPatterns(data);
-    } catch (e) {
-      console.error('Failed to fetch patterns', e);
-    }
+  const toggleRoutine = async (id: string, completed: boolean) => {
+    setRoutines((p) => p.map((r) => (r._id === id ? { ...r, completed } : r)));
+    try { await post(`/api/routines/${id}`, { completed }, 'PATCH'); load(true); }
+    catch { say('Could not update routine'); load(true); }
   };
 
-  const fetchRoutines = async () => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/children/${CHILD_ID}/routines`);
-      const data = await res.json();
-      if (Array.isArray(data)) setRoutines(data);
-    } catch (e) {
-      console.error('Failed to fetch routines', e);
-    }
+  const feedback = async (activityId: string, rating: string) => {
+    try { await post(`/api/activities/${activityId}/feedback`, { childId: child._id, rating }); say(`Saved: ${rating}`); }
+    catch { say('Could not save feedback'); }
   };
 
-  const fetchActivities = async () => {
+  const addNote = async () => {
+    if (!noteText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/activities`);
-      const data = await res.json();
-      if (Array.isArray(data)) setActivities(data);
-    } catch (e) {
-      console.error('Failed to fetch activities', e);
-    }
-  };
-
-  const submitEpisodeLog = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/episodes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(logForm)
+      await post(`/api/children/${child._id}/notes`, {
+        author: noteAs === 'Therapist' ? (team.therapists[0]?.name || 'Therapist') : (team.parent?.name || 'Parent'),
+        authorRole: noteAs,
+        text: noteText.trim(),
       });
-      if (res.ok) {
-        setIsLogModalOpen(false);
-        setWizardStep(1);
-        fetchTimeline();
-        fetchPatterns();
-      }
-    } catch (e) {
-      console.error('Failed to save episode', e);
-    }
+      setNoteText(''); say('Note added'); load(true);
+    } catch { say('Could not add note'); }
   };
 
-  const sendChatMessage = async () => {
-    if (!chatInput.trim()) return;
-    const userMsg = chatInput;
-    setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
+  const sendChat = async (preset?: string) => {
+    const msg = (preset ?? chatInput).trim();
+    if (!msg || !child) return;
+    setChat((p) => [...p, { sender: 'user', text: msg }, { sender: 'ai', text: 'Thinking…' }]);
     setChatInput('');
-
     try {
-      const res = await fetch('http://localhost:5000/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, childId: CHILD_ID })
-      });
-      const data = await res.json();
-      setChatMessages(prev => [...prev, { sender: 'ai', text: data.reply }]);
-    } catch (e) {
-      setChatMessages(prev => [...prev, { sender: 'ai', text: 'Sorry, I am having trouble connecting right now.' }]);
+      const d = await post('/api/ai/chat', { message: msg, childId: child._id });
+      const text = d.source === 'rule-based' ? `${d.reply}\n\n(Answered from your records, AI model offline)` : d.reply;
+      setChat((p) => [...p.slice(0, -1), { sender: 'ai', text }]);
+    } catch {
+      setChat((p) => [...p.slice(0, -1), { sender: 'ai', text: 'Cannot reach the backend. Is it running?' }]);
     }
   };
 
-  const submitActivityFeedback = async (activityId: string, rating: string) => {
-    try {
-      await fetch(`http://localhost:5000/api/activities/${activityId}/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ childId: CHILD_ID, rating })
-      });
-      alert(`Feedback recorded: ${rating}`);
-    } catch (e) {
-      console.error('Failed to record activity feedback', e);
-    }
-  };
+  const maxTrig = Math.max(1, ...patterns.triggerCounts.map((t: any) => t.count));
+  const maxLoc = Math.max(1, ...patterns.locationCounts.map((t: any) => t.count));
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
-      
-      {/* Top Navigation */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
-            🧠
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div className="px-4 lg:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center">🧠</div>
+            <div>
+              <div className="font-bold leading-tight">NeuroAI</div>
+              <div className="text-xs text-slate-500 leading-tight">
+                {child ? `${child.name}, ${child.age} yrs` : 'Care Suite'}
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-teal-600 bg-clip-text text-transparent">
-              NeuroAI
-            </span>
-            <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium ml-2 border border-indigo-100">
-              Care Suite
-            </span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => load()} title="Refresh" className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">
+              <RefreshCw className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
+            </button>
+            <button onClick={() => setLogOpen(true)} disabled={!child}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
+              <Plus className="w-4 h-4" /> Log episode
+            </button>
+            <button onClick={() => setSosOpen(true)}
+              className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4" /> SOS
+            </button>
           </div>
-        </div>
-
-        {/* Active Profile */}
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-sm font-semibold text-slate-700">Alex Jenkins (Age 6)</span>
-          </div>
-
-          <button 
-            onClick={() => setIsLogModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center space-x-2 shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Log Event</span>
-          </button>
-
-          <button 
-            onClick={() => setIsEmergencyOpen(true)}
-            className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center space-x-2 shadow-sm animate-bounce"
-          >
-            <ShieldAlert className="w-4 h-4" />
-            <span>Emergency SOS</span>
-          </button>
         </div>
       </header>
 
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-slate-200 p-4 space-y-1 hidden lg:block">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: Home },
-            { id: 'logger', label: 'Meltdown Logger', icon: AlertTriangle },
-            { id: 'routines', label: 'Routines & Checklist', icon: Calendar },
-            { id: 'insights', label: 'Pattern Analytics', icon: Activity },
-            { id: 'activities', label: 'Activity Engine', icon: Award },
-            { id: 'therapist', label: 'Therapist Portal', icon: Users },
-          ].map(item => {
-            const Icon = item.icon;
-            const active = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition ${
-                  active 
-                    ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${active ? 'text-indigo-600' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
+      <div className="flex">
+        {/* Sidebar (desktop) */}
+        <aside className="hidden lg:block w-56 shrink-0 border-r border-slate-200 bg-white min-h-[calc(100vh-61px)] p-3 space-y-1">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                tab === id ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}>
+              <Icon className="w-4 h-4" /> {label}
+            </button>
+          ))}
         </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 space-y-6 max-w-7xl mx-auto">
-          
-          {/* TAB 1: DASHBOARD OVERVIEW */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              
-              {/* Stat Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Avg Episode Intensity</div>
-                  <div className="text-3xl font-extrabold text-slate-800 mt-2">{patterns.avgIntensity || '0'}<span className="text-lg text-slate-400 font-normal">/5</span></div>
-                  <div className="text-xs text-emerald-600 mt-2 font-medium">↓ 12% lower than last week</div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Episodes Logged</div>
-                  <div className="text-3xl font-extrabold text-slate-800 mt-2">{patterns.totalEpisodes || '0'}</div>
-                  <div className="text-xs text-slate-500 mt-2">Recorded in past 30 days</div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Primary Trigger</div>
-                  <div className="text-xl font-bold text-indigo-600 mt-2 truncate">{patterns.triggers?.[0] || 'None Identified'}</div>
-                  <div className="text-xs text-slate-500 mt-2">Correlated with sensory overload</div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Routine Success Rate</div>
-                  <div className="text-3xl font-extrabold text-teal-600 mt-2">85%</div>
-                  <div className="text-xs text-teal-600 mt-2 font-medium">↑ High consistency this week</div>
-                </div>
-              </div>
-
-              {/* AI Insight Highlight Banner */}
-              <div className="bg-gradient-to-r from-indigo-500 to-teal-600 rounded-2xl p-6 text-white shadow-md flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Sparkles className="w-5 h-5 text-amber-300" />
-                    <span className="font-bold text-sm tracking-wide uppercase text-indigo-100">AI Pattern Recognition</span>
+        <main className="flex-1 min-w-0 p-4 lg:p-6 pb-24 lg:pb-6 max-w-5xl">
+          {status === 'error' && (
+            <Card className="mb-4 border-rose-200 bg-rose-50">
+              <div className="flex items-start gap-3">
+                <WifiOff className="w-5 h-5 text-rose-600 mt-0.5" />
+                <div className="text-sm">
+                  <div className="font-semibold text-rose-800">Can&apos;t reach the backend</div>
+                  <div className="text-rose-700 mt-1">
+                    Tried <code className="bg-white px-1 rounded">{API}</code> ({errMsg}). Check that the backend is running
+                    (<code className="bg-white px-1 rounded">node --env-file=.env server.js</code>), MongoDB is up,
+                    and CORS_ORIGIN matches this page&apos;s address.
                   </div>
-                  <p className="text-lg font-medium">
-                    Observed Correlation: 66% of sensory meltdowns occurred near 2:00 PM during transition to lunch.
-                  </p>
+                  <button onClick={() => load()} className="mt-2 text-rose-800 underline font-medium">Retry</button>
                 </div>
-                <button onClick={() => setActiveTab('insights')} className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-sm font-semibold backdrop-blur-sm transition">
-                  View Analysis
-                </button>
+              </div>
+            </Card>
+          )}
+          {status === 'empty' && (
+            <Card className="mb-4 border-amber-200 bg-amber-50 text-sm text-amber-800">
+              Backend is connected but the database is empty. Run <code className="bg-white px-1 rounded">node --env-file=.env seed.js</code> in neuroai-backend, then refresh.
+            </Card>
+          )}
+          {status === 'loading' && !child && <p className="text-sm text-slate-500">Loading…</p>}
+
+          {/* DASHBOARD */}
+          {child && tab === 'dashboard' && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { l: 'Avg intensity', v: `${patterns.avgIntensity}/5` },
+                  { l: 'Episodes logged', v: patterns.totalEpisodes },
+                  { l: 'Top trigger', v: patterns.triggerCounts[0]?.name || '—', small: true },
+                  { l: 'Routines done', v: `${patterns.routineSuccessRate}%` },
+                ].map((s) => (
+                  <Card key={s.l} className="!p-4">
+                    <div className="text-xs text-slate-500">{s.l}</div>
+                    <div className={`font-bold mt-1 ${s.small ? 'text-base truncate' : 'text-2xl'}`}>{s.v}</div>
+                  </Card>
+                ))}
               </div>
 
-              {/* Live Timeline Feed */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center justify-between">
-                  <span>Child Activity Timeline</span>
-                  <button className="text-sm text-indigo-600 hover:underline flex items-center space-x-1">
-                    <Filter className="w-4 h-4" />
-                    <span>Filter</span>
-                  </button>
-                </h3>
-
-                <div className="space-y-4">
-                  {timelineEvents.length === 0 ? (
-                    <p className="text-slate-400 text-sm italic">No events logged yet.</p>
-                  ) : (
-                    timelineEvents.map((evt, idx) => (
-                      <div key={idx} className="flex items-start space-x-4 p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
-                        <div className={`p-2.5 rounded-xl text-white font-bold text-xs ${
-                          evt.type === 'episode' ? 'bg-rose-500' :
-                          evt.type === 'note' ? 'bg-indigo-500' :
-                          evt.type === 'progress' ? 'bg-emerald-500' : 'bg-amber-500'
-                        }`}>
-                          {evt.type.toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-slate-800">{evt.title}</h4>
-                            <span className="text-xs text-slate-400">{new Date(evt.ts).toLocaleString()}</span>
-                          </div>
-                          <p className="text-sm text-slate-600 mt-1">{evt.details}</p>
-                        </div>
-                      </div>
-                    ))
+              <Card>
+                <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
+                  <Sparkles className="w-4 h-4" /> Pattern insight
+                  {insight && (
+                    <span className="ml-auto text-xs font-normal text-slate-400">
+                      {insight.source === 'ollama' ? 'AI generated' : 'Stats summary'}
+                    </span>
                   )}
                 </div>
-              </div>
-            </div>
-          )}
+                <p className="text-sm text-slate-700 mt-2 whitespace-pre-line">{insight ? insight.text : 'Analyzing recent episodes…'}</p>
+              </Card>
 
-          {/* TAB 2: MELTDOWN LOGGER PAGE */}
-          {activeTab === 'logger' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm max-w-3xl mx-auto space-y-6">
-              <div className="border-b border-slate-100 pb-4">
-                <h2 className="text-2xl font-bold text-slate-800">Behavioral Episode Logger</h2>
-                <p className="text-slate-500 text-sm">Structured Before → During → After episode logging system.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* STEP 1 */}
-                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40">
-                  <span className="text-xs font-bold text-indigo-600 uppercase">Step 1: Before</span>
-                  <p className="text-sm font-semibold text-slate-800 mt-1">Triggers & Context</p>
-                  <ul className="text-xs text-slate-600 mt-2 space-y-1">
-                    <li>• Environment: {logForm.sensoryEnvironment}</li>
-                    <li>• Sleep: {logForm.sleepHours} Hours</li>
-                    <li>• Trigger: {logForm.trigger}</li>
-                  </ul>
-                </div>
-
-                {/* STEP 2 */}
-                <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/40">
-                  <span className="text-xs font-bold text-rose-600 uppercase">Step 2: During</span>
-                  <p className="text-sm font-semibold text-slate-800 mt-1">Behaviors & Severity</p>
-                  <ul className="text-xs text-slate-600 mt-2 space-y-1">
-                    <li>• Intensity: {logForm.intensity}/5</li>
-                    <li>• Duration: {logForm.durationMinutes} mins</li>
-                    <li>• Action: {logForm.response}</li>
-                  </ul>
-                </div>
-
-                {/* STEP 3 */}
-                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40">
-                  <span className="text-xs font-bold text-emerald-600 uppercase">Step 3: After</span>
-                  <p className="text-sm font-semibold text-slate-800 mt-1">De-escalation & Recovery</p>
-                  <ul className="text-xs text-slate-600 mt-2 space-y-1">
-                    <li>• Recovery: {logForm.recoveryMinutes} mins</li>
-                    <li>• Calming: {logForm.calmingInterventions.join(', ')}</li>
-                  </ul>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => setIsLogModalOpen(true)} 
-                className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition"
-              >
-                Open Full Meltdown Logging Wizard
-              </button>
-            </div>
-          )}
-
-          {/* TAB 3: ROUTINES & CHECKLIST */}
-          {activeTab === 'routines' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-slate-800">Daily Routines & Schedules</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {routines.length === 0 ? (
-                  <p className="text-slate-400 text-sm">No routines configured yet.</p>
+              <Card>
+                <h3 className="font-semibold mb-3">Recent activity</h3>
+                {timeline.length === 0 ? (
+                  <p className="text-sm text-slate-400">Nothing logged yet.</p>
                 ) : (
-                  routines.map((r, i) => (
-                    <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-slate-800 text-lg">{r.name}</h3>
-                        <span className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-medium">
-                          {r.time || 'Daily'}
+                  <ul className="divide-y divide-slate-100">
+                    {timeline.slice(0, 8).map((e, i) => (
+                      <li key={i} className="py-3 flex gap-3">
+                        <span className={`shrink-0 mt-0.5 h-fit text-[10px] font-bold px-2 py-1 rounded ${
+                          e.type === 'episode' ? 'bg-rose-100 text-rose-700' :
+                          e.type === 'note' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {e.type.toUpperCase()}
                         </span>
-                      </div>
-                      <div className="space-y-3">
-                        {r.steps?.map((step: string, idx: number) => (
-                          <label key={idx} className="flex items-center space-x-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer">
-                            <input type="checkbox" className="w-5 h-5 accent-indigo-600 rounded" />
-                            <span className="text-sm font-medium text-slate-700">{step}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))
+                        <div className="min-w-0 flex-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="text-sm font-medium truncate">{e.title}</span>
+                            <span className="text-xs text-slate-400 shrink-0">{fmt(e.ts)}</span>
+                          </div>
+                          {e.details && <p className="text-sm text-slate-500 mt-0.5">{e.details}</p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </div>
+              </Card>
             </div>
           )}
 
-          {/* TAB 4: PATTERN ANALYTICS */}
-          {activeTab === 'insights' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-slate-800">Pattern Recognition Engine</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                  <h3 className="font-bold text-slate-800">Identified Triggers</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {patterns.triggers?.map((trig: string, i: number) => (
-                      <span key={i} className="bg-rose-50 text-rose-700 px-3 py-1.5 rounded-lg text-sm font-semibold border border-rose-100">
-                        ⚠️ {trig}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                  <h3 className="font-bold text-slate-800">Primary Locations</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {patterns.locations?.map((loc: string, i: number) => (
-                      <span key={i} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold border border-indigo-100">
-                        📍 {loc}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+          {/* EPISODES */}
+          {child && tab === 'logger' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold">Episodes</h2>
+                <button onClick={() => setLogOpen(true)} className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium">+ New episode</button>
               </div>
-            </div>
-          )}
-
-          {/* TAB 5: PERSONALIZED ACTIVITIES */}
-          {activeTab === 'activities' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-slate-800">Personalized Activity Engine</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {activities.map((act, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between space-y-4">
-                    <div>
-                      <span className="text-xs bg-teal-50 text-teal-700 px-2.5 py-1 rounded-md font-semibold">
-                        {act.category || 'Sensory'}
+              {episodes.length === 0 ? <Card><p className="text-sm text-slate-400">No episodes yet.</p></Card> :
+                episodes.map((e) => (
+                  <Card key={e._id} className="!p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium text-sm">{e.trigger || 'Unknown trigger'}</div>
+                      <span className={`text-xs font-bold px-2 py-1 rounded ${
+                        e.intensity >= 4 ? 'bg-rose-100 text-rose-700' : e.intensity === 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        Intensity {e.intensity}/5
                       </span>
-                      <h3 className="font-bold text-slate-800 text-lg mt-2">{act.title}</h3>
-                      <p className="text-sm text-slate-600 mt-1">{act.description}</p>
                     </div>
-
-                    <div className="pt-4 border-t border-slate-100 space-y-2">
-                      <div className="text-xs font-semibold text-slate-400 uppercase">Log Outcome</div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button 
-                          onClick={() => submitActivityFeedback(act._id, 'Completed')} 
-                          className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold py-2 rounded-lg transition"
-                        >
-                          ✓ Completed
-                        </button>
-                        <button 
-                          onClick={() => submitActivityFeedback(act._id, 'Too Difficult')} 
-                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold py-2 rounded-lg transition"
-                        >
-                          ✕ Too Hard
-                        </button>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {fmt(e.ts)} · {[e.location, e.activity].filter(Boolean).join(' · ')}
+                      {e.durationMinutes ? ` · ${e.durationMinutes} min` : ''}
+                    </div>
+                    {(e.behaviors?.length > 0 || e.calmingInterventions?.length > 0) && (
+                      <div className="text-xs text-slate-600 mt-2 space-y-0.5">
+                        {e.behaviors?.length > 0 && <div><b>Behaviors:</b> {e.behaviors.join(', ')}</div>}
+                        {e.calmingInterventions?.length > 0 && <div><b>What helped:</b> {e.calmingInterventions.join(', ')}</div>}
                       </div>
-                    </div>
-                  </div>
+                    )}
+                  </Card>
+                ))}
+            </div>
+          )}
+
+          {/* ROUTINES */}
+          {child && tab === 'routines' && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold">Routines</h2>
+              <Card className="!p-2">
+                {routines.length === 0 ? <p className="text-sm text-slate-400 p-3">No routines yet.</p> :
+                  routines.map((r) => (
+                    <label key={r._id} className="flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer">
+                      <span className="flex items-center gap-3">
+                        <input type="checkbox" checked={!!r.completed}
+                          onChange={(e) => toggleRoutine(r._id, e.target.checked)}
+                          className="w-5 h-5 accent-indigo-600" />
+                        <span className={`text-sm ${r.completed ? 'line-through text-slate-400' : ''}`}>{r.title}</span>
+                      </span>
+                      <span className="text-xs text-slate-500">{r.scheduleTime || r.category}</span>
+                    </label>
+                  ))}
+              </Card>
+            </div>
+          )}
+
+          {/* PATTERNS */}
+          {child && tab === 'insights' && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold">Patterns</h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { title: 'Triggers', data: patterns.triggerCounts, max: maxTrig, color: 'bg-rose-400' },
+                  { title: 'Locations', data: patterns.locationCounts, max: maxLoc, color: 'bg-indigo-400' },
+                ].map((g) => (
+                  <Card key={g.title}>
+                    <h3 className="font-semibold mb-3">{g.title}</h3>
+                    {g.data.length === 0 ? <p className="text-sm text-slate-400">No data yet.</p> :
+                      <div className="space-y-3">
+                        {g.data.map((d: any) => (
+                          <div key={d.name}>
+                            <div className="flex justify-between text-sm mb-1"><span>{d.name}</span><span className="text-slate-500">{d.count}</span></div>
+                            <div className="h-2 bg-slate-100 rounded-full">
+                              <div className={`h-2 rounded-full ${g.color}`} style={{ width: `${(d.count / g.max) * 100}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>}
+                  </Card>
                 ))}
               </div>
             </div>
           )}
 
-          {/* TAB 6: THERAPIST PORTAL */}
-          {activeTab === 'therapist' && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-800">Therapist & Caregiver Collaboration</h2>
-                  <p className="text-sm text-slate-500">Shared clinical notes, grants, and PDF clinical export.</p>
-                </div>
-                <button onClick={() => alert('PDF report export initialized')} className="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-xl">
-                  Export 30-Day PDF Report
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-bold text-slate-800">Authorized Specialists</h3>
-                <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center">
-                      DA
-                    </div>
+          {/* ACTIVITIES */}
+          {child && tab === 'activities' && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold">Suggested activities</h2>
+              <div className="grid md:grid-cols-3 gap-4">
+                {activities.map((a) => (
+                  <Card key={a._id} className="flex flex-col justify-between">
                     <div>
-                      <h4 className="font-bold text-slate-800">Dr. Aris (Occupational Therapist)</h4>
-                      <span className="text-xs text-slate-500">Access granted for timeline and activity feedback</span>
+                      <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded">{a.category}</span>
+                      <h3 className="font-semibold mt-2">{a.title}</h3>
+                      <p className="text-sm text-slate-500 mt-1">{a.description}</p>
                     </div>
-                  </div>
-                  <span className="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-semibold">Active</span>
-                </div>
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      <button onClick={() => feedback(a._id, 'Completed')} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium py-2 rounded-lg">Completed</button>
+                      <button onClick={() => feedback(a._id, 'Too Difficult')} className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium py-2 rounded-lg">Too hard</button>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </div>
           )}
 
+          {/* THERAPIST */}
+          {child && tab === 'therapist' && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold">Care team</h2>
+              <Card>
+                <h3 className="font-semibold mb-3 text-sm">People with access</h3>
+                <ul className="space-y-2">
+                  {team.parent && (
+                    <li className="flex items-center justify-between text-sm">
+                      <span>{team.parent.name} <span className="text-slate-400">· Parent</span></span>
+                      <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full">Owner</span>
+                    </li>
+                  )}
+                  {team.therapists.map((t: any) => (
+                    <li key={t._id} className="flex items-center justify-between text-sm">
+                      <span>{t.name} <span className="text-slate-400">· Therapist</span></span>
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Access granted</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+
+              <Card>
+                <h3 className="font-semibold mb-3 text-sm">Shared notes</h3>
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                  <select value={noteAs} onChange={(e) => setNoteAs(e.target.value as any)} className={`${inputCls} sm:w-36`}>
+                    <option>Parent</option><option>Therapist</option>
+                  </select>
+                  <input value={noteText} onChange={(e) => setNoteText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addNote()}
+                    placeholder="Write a note…" className={inputCls} />
+                  <button onClick={addNote} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Add</button>
+                </div>
+                {notes.length === 0 ? <p className="text-sm text-slate-400">No notes yet.</p> :
+                  <ul className="divide-y divide-slate-100">
+                    {notes.map((n) => (
+                      <li key={n._id} className="py-3">
+                        <div className="flex justify-between text-xs text-slate-500">
+                          <span>{n.author}{n.authorRole ? ` · ${n.authorRole}` : ''}</span><span>{fmt(n.ts)}</span>
+                        </div>
+                        <p className="text-sm mt-1">{n.text}</p>
+                      </li>
+                    ))}
+                  </ul>}
+              </Card>
+            </div>
+          )}
         </main>
       </div>
 
-      {/* FLOATING AI CHAT FAB */}
-      <button 
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-2xl hover:bg-indigo-700 transition z-40 flex items-center space-x-2"
-      >
-        <Sparkles className="w-6 h-6" />
-        <span className="font-bold text-sm hidden md:inline">NeuroAI Assistant</span>
+      {/* Bottom tabs (mobile) */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setTab(id)}
+            className={`flex-1 py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
+            <Icon className="w-5 h-5" />{label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Chat */}
+      <button onClick={() => setChatOpen(!chatOpen)}
+        className="fixed bottom-20 lg:bottom-6 right-4 bg-indigo-600 text-white p-3.5 rounded-full shadow-lg z-40">
+        <Sparkles className="w-5 h-5" />
       </button>
-
-      {/* AI CHAT SLIDE-OVER DRAWER */}
-      {isChatOpen && (
-        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col">
-          <div className="p-4 bg-indigo-600 text-white flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-amber-300" />
-              <span className="font-bold">NeuroAI Assistant</span>
-            </div>
-            <button onClick={() => setIsChatOpen(false)} className="text-white/80 hover:text-white">
-              <X className="w-5 h-5" />
-            </button>
+      {chatOpen && (
+        <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white border-l border-slate-200 shadow-xl z-50 flex flex-col">
+          <div className="p-4 bg-indigo-600 text-white flex justify-between items-center">
+            <span className="font-semibold">Assistant</span>
+            <button onClick={() => setChatOpen(false)}><X className="w-5 h-5" /></button>
           </div>
-
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${
-                  msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'
-                }`}>
-                  {msg.text}
-                </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chat.map((m, i) => (
+              <div key={i} className={`flex ${m.sender === 'user' ? 'justify-end' : ''}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-line ${m.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`}>{m.text}</div>
               </div>
             ))}
           </div>
-
-          <div className="p-4 border-t border-slate-200 flex space-x-2">
-            <input 
-              type="text" 
-              value={chatInput} 
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
-              placeholder="Ask about routines, sensory tips..." 
-              className="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-600"
-            />
-            <button onClick={sendChatMessage} className="bg-indigo-600 text-white p-2 rounded-xl">
-              <Send className="w-4 h-4" />
-            </button>
+          <div className="px-3 pb-2 flex flex-wrap gap-2">
+            {CHAT_PRESETS.map((q) => (
+              <button key={q} onClick={() => sendChat(q)}
+                className="text-xs px-3 py-1.5 rounded-full border border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                {q}
+              </button>
+            ))}
+          </div>
+          <div className="p-3 border-t flex gap-2">
+            <input value={chatInput} onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendChat()} placeholder="Ask something…" className={inputCls} />
+            <button onClick={() => sendChat()} className="bg-indigo-600 text-white px-3 rounded-lg"><Send className="w-4 h-4" /></button>
           </div>
         </div>
       )}
 
-      {/* MELTDOWN LOGGER MULTI-STEP WIZARD MODAL */}
-      {isLogModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-2xl p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-lg text-slate-800">
-                Episode Logger — Step {wizardStep} of 3
-              </h3>
-              <button onClick={() => setIsLogModalOpen(false)}>
-                <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-              </button>
+      {/* Log wizard */}
+      {logOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-5">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold">Log episode · Step {step} of 3</h3>
+              <button onClick={() => setLogOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
 
-            {/* STEP 1: BEFORE */}
-            {wizardStep === 1 && (
-              <div className="space-y-4">
-                <h4 className="font-bold text-indigo-600 text-sm uppercase">Step 1: Before (Context & Triggers)</h4>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Location</label>
-                  <input type="text" value={logForm.location} onChange={(e) => setLogForm({...logForm, location: e.target.value})} className="w-full border border-slate-300 rounded-xl p-2 text-sm mt-1" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Primary Trigger</label>
-                  <input type="text" value={logForm.trigger} onChange={(e) => setLogForm({...logForm, trigger: e.target.value})} className="w-full border border-slate-300 rounded-xl p-2 text-sm mt-1" />
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: DURING */}
-            {wizardStep === 2 && (
-              <div className="space-y-4">
-                <h4 className="font-bold text-rose-600 text-sm uppercase">Step 2: During (Behaviors & Intensity)</h4>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Intensity Level (1-5)</label>
-                  <input type="range" min="1" max="5" value={logForm.intensity} onChange={(e) => setLogForm({...logForm, intensity: Number(e.target.value)})} className="w-full accent-rose-600 mt-2" />
-                  <span className="text-sm font-bold text-rose-600">{logForm.intensity} / 5</span>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Duration (Minutes)</label>
-                  <input type="number" value={logForm.durationMinutes} onChange={(e) => setLogForm({...logForm, durationMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-xl p-2 text-sm mt-1" />
+            {step === 1 && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-indigo-600">Before: context and trigger</p>
+                <Field label="Location"><input className={inputCls} value={log.location} onChange={(e) => setLog({ ...log, location: e.target.value })} /></Field>
+                <Field label="What was happening?"><input className={inputCls} value={log.activity} placeholder="e.g. Lunch time" onChange={(e) => setLog({ ...log, activity: e.target.value })} /></Field>
+                <Field label="Trigger"><input className={inputCls} value={log.trigger} placeholder="e.g. Loud noise" onChange={(e) => setLog({ ...log, trigger: e.target.value })} /></Field>
+                <div className="grid grid-cols-3 gap-3">
+                  <Field label="Environment">
+                    <select className={inputCls} value={log.sensoryEnvironment} onChange={(e) => setLog({ ...log, sensoryEnvironment: e.target.value })}>
+                      <option>Quiet</option><option>Normal</option><option>Loud</option><option>Crowded</option>
+                    </select>
+                  </Field>
+                  <Field label="Sleep (hrs)"><input type="number" className={inputCls} value={log.sleepHours} onChange={(e) => setLog({ ...log, sleepHours: Number(e.target.value) })} /></Field>
+                  <Field label="Hunger">
+                    <select className={inputCls} value={log.hungerLevel} onChange={(e) => setLog({ ...log, hungerLevel: e.target.value })}>
+                      <option>Full</option><option>Normal</option><option>Hungry</option>
+                    </select>
+                  </Field>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: AFTER */}
-            {wizardStep === 3 && (
-              <div className="space-y-4">
-                <h4 className="font-bold text-emerald-600 text-sm uppercase">Step 3: After (De-escalation & Recovery)</h4>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Recovery Time (Minutes)</label>
-                  <input type="number" value={logForm.recoveryMinutes} onChange={(e) => setLogForm({...logForm, recoveryMinutes: Number(e.target.value)})} className="w-full border border-slate-300 rounded-xl p-2 text-sm mt-1" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Post-Episode Behavior</label>
-                  <input type="text" value={logForm.postEpisodeBehavior} onChange={(e) => setLogForm({...logForm, postEpisodeBehavior: e.target.value})} className="w-full border border-slate-300 rounded-xl p-2 text-sm mt-1" />
-                </div>
+            {step === 2 && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-rose-600">During: behaviors and intensity</p>
+                <Field label="Behaviors"><Chips options={BEHAVIORS} value={log.behaviors} onChange={(v) => setLog({ ...log, behaviors: v })} /></Field>
+                <Field label={`Intensity: ${log.intensity}/5`}>
+                  <input type="range" min={1} max={5} value={log.intensity} onChange={(e) => setLog({ ...log, intensity: Number(e.target.value) })} className="w-full accent-rose-600" />
+                </Field>
+                <Field label="Duration (min)"><input type="number" className={inputCls} value={log.durationMinutes} onChange={(e) => setLog({ ...log, durationMinutes: Number(e.target.value) })} /></Field>
+                <Field label="How did you respond?"><input className={inputCls} value={log.response} placeholder="e.g. Moved to a quiet room" onChange={(e) => setLog({ ...log, response: e.target.value })} /></Field>
               </div>
             )}
 
-            <div className="flex justify-between pt-4 border-t border-slate-100">
-              {wizardStep > 1 ? (
-                <button onClick={() => setWizardStep(s => s - 1)} className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold">
-                  Back
-                </button>
-              ) : <div />}
+            {step === 3 && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-emerald-600">After: what helped</p>
+                <Field label="What helped"><Chips options={CALMING} value={log.calmingInterventions} onChange={(v) => setLog({ ...log, calmingInterventions: v })} /></Field>
+                <Field label="Recovery time (min)"><input type="number" className={inputCls} value={log.recoveryMinutes} onChange={(e) => setLog({ ...log, recoveryMinutes: Number(e.target.value) })} /></Field>
+                <Field label="Behavior afterwards"><input className={inputCls} value={log.postEpisodeBehavior} placeholder="e.g. Calm but tired" onChange={(e) => setLog({ ...log, postEpisodeBehavior: e.target.value })} /></Field>
+              </div>
+            )}
 
-              {wizardStep < 3 ? (
-                <button onClick={() => setWizardStep(s => s + 1)} className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-semibold">
-                  Next
-                </button>
-              ) : (
-                <button onClick={submitEpisodeLog} className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-semibold">
-                  Save Episode Log
-                </button>
-              )}
+            <div className="flex justify-between pt-3 border-t">
+              {step > 1 ? <button onClick={() => setStep(step - 1)} className="px-4 py-2 border rounded-lg text-sm">Back</button> : <span />}
+              {step < 3
+                ? <button onClick={() => setStep(step + 1)} className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium">Next</button>
+                : <button onClick={saveEpisode} disabled={saving} className="bg-emerald-600 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium">{saving ? 'Saving…' : 'Save episode'}</button>}
             </div>
           </div>
         </div>
       )}
 
-      {/* EMERGENCY SOS MODAL */}
-      {isEmergencyOpen && (
-        <div className="fixed inset-0 bg-rose-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border-2 border-rose-500 w-full max-w-lg p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between text-rose-600">
-              <div className="flex items-center space-x-2">
-                <ShieldAlert className="w-6 h-6 animate-pulse" />
-                <h3 className="font-bold text-xl">Emergency De-Escalation</h3>
-              </div>
-              <button onClick={() => setIsEmergencyOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-6 h-6" />
-              </button>
+      {/* SOS */}
+      {sosOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 space-y-4 border-2 border-rose-500">
+            <div className="flex justify-between items-center text-rose-600">
+              <h3 className="font-bold text-lg flex items-center gap-2"><ShieldAlert className="w-5 h-5" /> De-escalation steps</h3>
+              <button onClick={() => setSosOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-
-            <div className="space-y-3">
-              <h4 className="font-semibold text-slate-800 text-sm">Quick De-Escalation Steps:</h4>
-              <ul className="text-sm text-slate-600 space-y-2">
-                <li className="flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  <span>Reduce sensory stimuli (Dim lights, eliminate background noise).</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  <span>Offer deep-pressure therapy (Weighted blanket or firm hug).</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  <span>Use minimal clear language; avoid demanding responses.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-              <a href="tel:911" className="bg-rose-600 text-white py-3 rounded-xl font-bold text-center block">
-                Call Emergency (911)
-              </a>
-              <button onClick={() => alert('Therapist alerted')} className="bg-indigo-600 text-white py-3 rounded-xl font-bold">
-                Alert Therapist
-              </button>
-            </div>
+            <ol className="text-sm text-slate-700 space-y-2 list-decimal pl-5">
+              <li>Reduce stimulation: dim lights, cut background noise.</li>
+              <li>Offer deep pressure: weighted blanket or a firm hug if welcome.</li>
+              <li>Use few, calm words. Don&apos;t ask for answers yet.</li>
+              <li>Stay close and wait. Let the child recover at their own pace.</li>
+            </ol>
+            <a href="tel:112" className="block text-center bg-rose-600 text-white py-3 rounded-lg font-semibold">Call emergency (112)</a>
           </div>
         </div>
       )}
 
+      {toast && (
+        <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg z-[60]">{toast}</div>
+      )}
     </div>
   );
 }
