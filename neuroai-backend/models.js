@@ -119,6 +119,27 @@ const learningProgressSchema = new Schema({
 });
 learningProgressSchema.index({ parentId: 1, moduleSlug: 1 }, { unique: true });
 
+const teachingSubmissionSchema = new Schema({
+  childId: oid('Child'),
+  parentId: oid('User'),
+  moduleSlug: { type: String, required: true },
+  worksheetId: { type: String, required: true },
+  ts: { type: Date, default: Date.now },
+  day: String,
+  score: { type: Number, required: true },
+  max: { type: Number, required: true },
+  percent: { type: Number, required: true },
+  area: String,
+  engagement: { type: Number, min: 1, max: 5 },
+  minutes: { type: Number, min: 0, max: 180 },
+  notes: { type: String, maxlength: 1000, default: '' },
+  marks: [{ _id: false, itemId: String, level: { type: Number, min: 0, max: 2 } }],
+  file: { data: Buffer, mime: String, name: String },
+  progressId: { type: Schema.Types.ObjectId, ref: 'Progress' },
+  milestoneId: { type: Schema.Types.ObjectId, ref: 'Milestone' }
+});
+teachingSubmissionSchema.index({ childId: 1, ts: -1 });
+
 module.exports = {
   User: mongoose.model('User', userSchema),
   Child: mongoose.model('Child', childSchema),
@@ -132,5 +153,6 @@ module.exports = {
   RoutineLog: mongoose.model('RoutineLog', routineLogSchema),
   Activity: mongoose.model('Activity', activitySchema),
   ActivityFeedback: mongoose.model('ActivityFeedback', activityFeedbackSchema),
-  LearningProgress: mongoose.model('LearningProgress', learningProgressSchema)
+  LearningProgress: mongoose.model('LearningProgress', learningProgressSchema),
+  TeachingSubmission: mongoose.model('TeachingSubmission', teachingSubmissionSchema)
 };

@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Home, AlertTriangle, Calendar, Activity, Award, Users,
+  Home, AlertTriangle, Calendar, Activity, Award, Users, Pencil,
   Plus, ShieldAlert, Sparkles, X, Send, RefreshCw, WifiOff, GraduationCap
 } from 'lucide-react';
 import LearningHub from './components/learning/LearningHub';
 import LearningSummaryCard from './components/learning/LearningSummaryCard';
+import TeachingHub from './components/teaching/TeachingHub';
+import TeachingSummaryCard from './components/teaching/TeachingSummaryCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -17,6 +19,7 @@ const TABS = [
   { id: 'insights', label: 'Patterns', icon: Activity },
   { id: 'activities', label: 'Activities', icon: Award },
   { id: 'learn', label: 'Learn', icon: GraduationCap },
+  { id: 'teach', label: 'Teach', icon: Pencil },
   { id: 'therapist', label: 'Therapist', icon: Users },
 ];
 
@@ -284,6 +287,7 @@ export default function NeuroAIDashboard() {
               </div>
 
               {child.parentId && <LearningSummaryCard parentId={child.parentId} onOpen={() => setTab('learn')} />}
+              {child.parentId && <TeachingSummaryCard childId={child._id} parentId={child.parentId} onOpen={() => setTab('teach')} />}
 
               <Card>
                 <div className="flex items-center gap-2 text-sm font-semibold text-indigo-700">
@@ -431,6 +435,8 @@ export default function NeuroAIDashboard() {
           {/* LEARN */}
           {child && child.parentId && tab === 'learn' && <LearningHub parentId={child.parentId} toast={say} />}
 
+          {child && child.parentId && tab === 'teach' && <TeachingHub child={child} toast={say} />}
+
           {/* THERAPIST */}
           {child && tab === 'therapist' && (
             <div className="space-y-4">
@@ -485,8 +491,8 @@ export default function NeuroAIDashboard() {
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 flex">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex-1 py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
-            <Icon className="w-5 h-5" />{label}
+            className={`flex-1 min-w-0 py-2 flex flex-col items-center text-[10px] ${tab === id ? 'text-indigo-600' : 'text-slate-400'}`}>
+            <Icon className="w-5 h-5" /><span className="max-w-full truncate px-0.5">{label}</span>
           </button>
         ))}
       </nav>

@@ -252,6 +252,7 @@ app.post('/api/ai/chat', async (req, res) => {
 });
 
 require('./learning')(app);
+require('./teaching')(app);
 
 app.listen(PORT, () => {
   console.log(`Backend on http://localhost:${PORT}`);
