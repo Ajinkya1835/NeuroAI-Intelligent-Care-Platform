@@ -2,11 +2,11 @@
   "name": "neuroai",
   "private": true,
   "scripts": {
-    "setup": "npm i && npm --prefix neuroai-backend i && npm --prefix main i",
-    "seed": "npm --prefix neuroai-backend run seed",
-    "seed:reset": "npm --prefix neuroai-backend run seed -- --force",
-    "backend": "npm --prefix neuroai-backend start",
-    "frontend": "npm --prefix main run dev",
+    "setup": "npm i && npm --prefix backend i && npm --prefix frontend i",
+    "seed": "npm --prefix backend run seed",
+    "seed:reset": "npm --prefix backend run seed -- --force",
+    "backend": "npm --prefix backend start",
+    "frontend": "npm --prefix frontend run dev",
     "predev": "npx --yes kill-port 5000 3000",
     "dev": "npm run seed && concurrently -n api,web -c blue,green \"npm:backend\" \"npm:frontend\""
   },
