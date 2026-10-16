@@ -9,6 +9,12 @@ const { runSeed } = require('./seed');
 const { seedPeter } = require('./seedPeter');
 
 const app = express();
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+app.use(helmet());
+app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: true, legacyHeaders: false }));
+app.use('/api/ai', rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false }));
 const PORT = process.env.PORT || 5000;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const OPENROUTER_URL = process.env.OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions';
