@@ -10,8 +10,9 @@ const { seedPeter } = require('./seedPeter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const OLLAMA_URL = process.env.OLLAMA_URL || ''; // e.g. http://host:11434/api/generate
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_URL = process.env.OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/auto';
 const ALLOWED_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
 app.use(cors({ origin: ALLOWED_ORIGIN.split(',').map(o => o.trim()) }));
@@ -74,16 +75,22 @@ function ruleBasedSummary(episodes) {
   return parts.join(' ');
 }
 
-async function askOllama(prompt) {
-  if (!OLLAMA_URL) throw new Error('OLLAMA_URL not set');
-  const r = await fetch(OLLAMA_URL, {
+async function askOpenRouter(prompt) {
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
+  const r = await fetch(OPENROUTER_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false }),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [{ role: 'user', content: prompt }]
+    }),
     signal: AbortSignal.timeout(20000)
   });
-  if (!r.ok) throw new Error(`Ollama ${r.status}`);
-  return (await r.json()).response;
+  if (!r.ok) throw new Error(`OpenRouter ${r.status}`);
+  return (await r.json()).choices?.[0]?.message?.content;
 }
 
 // ---------- routes ----------
@@ -260,12 +267,12 @@ app.post('/api/ai/analyze', async (req, res) => {
       ({ ts, intensity, trigger, activity, location, durationMinutes }));
 
     try {
-      const analysis = await askOllama(
+      const analysis = await askOpenRouter(
         `Analyze these sensory meltdown episodes for a child. Give short, practical pattern insights and calming suggestions. Not medical advice.\n${JSON.stringify(slim)}`
       );
-      res.json({ analysis, source: 'ollama' });
+      res.json({ analysis, source: 'openrouter' });
     } catch (err) {
-      console.warn('Ollama unavailable, using rule-based summary:', err.message);
+      console.warn('OpenRouter unavailable, using rule-based summary:', err.message);
       res.json({ analysis: ruleBasedSummary(episodes), source: 'rule-based' });
     }
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -289,7 +296,7 @@ app.post('/api/ai/chat', async (req, res) => {
       recentEpisodes: episodes.map(({ ts, intensity, trigger, location }) => ({ ts, intensity, trigger, location }))
     };
 
-    const reply = await askOllama(
+    const reply = await askOpenRouter(
       `You are a supportive assistant for a parent of an autistic child. Be brief and practical, not medical advice.\nContext: ${JSON.stringify(context)}\nParent asks: ${message}`
     );
     res.json({ reply });
@@ -308,5 +315,5 @@ require('./teaching')(app);
 
 app.listen(PORT, () => {
   console.log(`Backend on http://localhost:${PORT}`);
-  console.log(OLLAMA_URL ? `Ollama: ${OLLAMA_URL} (${OLLAMA_MODEL})` : 'Ollama: not configured (rule-based fallback)');
+  console.log(OPENROUTER_API_KEY ? `OpenRouter: ${OPENROUTER_MODEL}` : 'OpenRouter: not configured (rule-based fallback)');
 });

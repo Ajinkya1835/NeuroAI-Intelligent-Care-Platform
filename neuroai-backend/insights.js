@@ -1,7 +1,7 @@
 // Pattern engine + AI insights.
 //
 //   GET  /api/children/:id/insights            plain-language findings computed from the live profile
-//   POST /api/children/:id/insights/ai         summary + suggestions (Ollama, rule-based fallback)
+//   POST /api/children/:id/insights/ai         summary + suggestions (OpenRouter, rule-based fallback)
 //                                              body: { refresh: true } to force a new generation
 //
 // AI output is cached per child and only regenerated when the profile's dataVersion changes
@@ -9,8 +9,9 @@
 const mongoose = require('mongoose');
 const { buildProfile } = require('./profile');
 
-const OLLAMA_URL = process.env.OLLAMA_URL || '';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OPENROUTER_URL = process.env.OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/auto';
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
 // ---------- pattern engine (pure: profile in, findings out) ----------
@@ -96,15 +97,23 @@ function analyze(p) {
 }
 
 // ---------- AI ----------
-async function askOllama(prompt) {
-  if (!OLLAMA_URL) throw new Error('OLLAMA_URL not set');
-  const r = await fetch(OLLAMA_URL, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: 'json' }),
+async function askOpenRouter(prompt) {
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not set');
+  const r = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' }
+    }),
     signal: AbortSignal.timeout(25000)
   });
-  if (!r.ok) throw new Error(`Ollama ${r.status}`);
-  return (await r.json()).response;
+  if (!r.ok) throw new Error(`OpenRouter ${r.status}`);
+  return (await r.json()).choices?.[0]?.message?.content;
 }
 
 function ruleBased(p, findings) {
@@ -204,9 +213,9 @@ module.exports = function registerInsights(app) {
 
       const findings = analyze(p);
       let out, source = 'rule-based';
-      if (OLLAMA_URL && p.episodes.stats.total) {
-        try { out = parseAi(await askOllama(buildPrompt(p, findings))); if (out) source = 'ollama'; }
-        catch (err) { console.warn('[insights] Ollama unavailable:', err.message); }
+      if (OPENROUTER_API_KEY && p.episodes.stats.total) {
+        try { out = parseAi(await askOpenRouter(buildPrompt(p, findings))); if (out) source = 'openrouter'; }
+        catch (err) { console.warn('[insights] OpenRouter unavailable:', err.message); }
       }
       if (!out) out = ruleBased(p, findings);
       const result = { ...out, source, dataVersion: p.dataVersion, generatedAt: new Date().toISOString(), cached: false };
