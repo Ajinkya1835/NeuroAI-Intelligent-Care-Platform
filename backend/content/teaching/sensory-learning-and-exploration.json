@@ -1,0 +1,639 @@
+{
+  "slug": "sensory-learning-and-exploration",
+  "order": 2,
+  "title": "Module 2: Sensory Learning and Exploration",
+  "area": "Sensory Learning",
+  "summary": "Explore touch, movement, pouring, outdoor noticing, sorting and sensory choices through short supported activities.",
+  "definitions": [
+    [
+      "touch-and-texture",
+      "Touch and Texture",
+      "Sensory Exploration",
+      "Texture matching",
+      "object",
+      [
+        [
+          "apple",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ],
+        [
+          "ball",
+          [
+            "apple",
+            "ball",
+            "star"
+          ]
+        ]
+      ],
+      "Let your child touch safe objects with different textures. Name each texture and allow them to choose whether to continue.",
+      "Your child can explore at their own pace."
+    ],
+    [
+      "pour-and-scoop",
+      "Pour and Scoop",
+      "Fine Motor",
+      "Scooping and pouring",
+      "count",
+      [
+        [
+          1,
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          2,
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          3,
+          [
+            3,
+            1,
+            2
+          ]
+        ]
+      ],
+      "Use cups, spoons and a tray with dry rice or water. Demonstrate slowly, then let your child scoop and pour.",
+      "Small repeated movements build control."
+    ],
+    [
+      "move-and-play",
+      "Move and Play",
+      "Movement",
+      "Copying safe movements",
+      "shape",
+      [
+        [
+          "circle",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ],
+        [
+          "square",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ],
+        [
+          "triangle",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ]
+      ],
+      "Offer simple actions such as stretch, push, jump or roll. Follow your child’s lead and pause when they show they need a break.",
+      "Movement should feel safe and fun."
+    ],
+    [
+      "sensory-walk",
+      "Sensory Walk",
+      "Sensory Awareness",
+      "Noticing the environment",
+      "color",
+      [
+        [
+          "red",
+          [
+            "red",
+            "blue",
+            "yellow"
+          ]
+        ],
+        [
+          "blue",
+          [
+            "red",
+            "blue",
+            "yellow"
+          ]
+        ],
+        [
+          "yellow",
+          [
+            "red",
+            "blue",
+            "yellow"
+          ]
+        ]
+      ],
+      "Take a short walk and notice one sound, color, texture or movement at a time. Keep the route familiar and optional.",
+      "Notice without pressure."
+    ],
+    [
+      "sort-by-shape",
+      "Sort by Shape",
+      "Early Thinking",
+      "Sorting objects",
+      "shape",
+      [
+        [
+          "circle",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ],
+        [
+          "square",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ],
+        [
+          "triangle",
+          [
+            "circle",
+            "square",
+            "triangle"
+          ]
+        ]
+      ],
+      "Sort safe household objects by shape. Start with two groups, then add a third when your child is ready.",
+      "One clear rule at a time makes sorting easier."
+    ],
+    [
+      "my-sensory-choices",
+      "My Sensory Choices",
+      "Self-Advocacy",
+      "Choosing what feels comfortable",
+      "face",
+      [
+        [
+          "happy",
+          [
+            "happy",
+            "sad",
+            "angry"
+          ]
+        ],
+        [
+          "sad",
+          [
+            "happy",
+            "sad",
+            "angry"
+          ]
+        ],
+        [
+          "happy",
+          [
+            "happy",
+            "sad",
+            "angry"
+          ]
+        ]
+      ],
+      "Offer two safe options, such as quiet or music, soft or rough, and ask your child to show or point to their choice.",
+      "A choice or a break is communication."
+    ]
+  ],
+  "ages": [
+    3,
+    6
+  ],
+  "level": "Beginner",
+  "outcomes": [
+    "Texture matching",
+    "Scooping and pouring",
+    "Copying safe movements",
+    "Noticing the environment",
+    "Sorting objects",
+    "Choosing what feels comfortable"
+  ],
+  "howTo": "Keep sessions short, follow your child’s signals and offer a break or a different way to participate whenever needed.",
+  "chapters": [
+    {
+      "id": "c1",
+      "title": "Chapter 1: Touch and Texture",
+      "summary": "Let your child touch safe objects with different textures. Name each texture and allow them to choose whether to continue.",
+      "worksheets": [
+        {
+          "id": "touch-and-texture",
+          "title": "Touch and Texture",
+          "skill": "Texture matching",
+          "area": "Sensory Exploration",
+          "minutes": 8,
+          "goal": "Let your child touch safe objects with different textures. Name each texture and allow them to choose whether to continue.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Let your child touch safe objects with different textures. Name each texture and allow them to choose whether to continue.",
+          "takeaway": "Your child can explore at their own pace.",
+          "sheet": {
+            "kind": "object",
+            "chapter": 1,
+            "rows": [
+              {
+                "target": "apple",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "ball",
+                "choices": [
+                  "apple",
+                  "ball",
+                  "star"
+                ],
+                "answer": 1
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "touch-and-texture-1",
+              "type": "match",
+              "prompt": "Choose the APPLE example"
+            },
+            {
+              "id": "touch-and-texture-2",
+              "type": "match",
+              "prompt": "Choose the BALL example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "title": "Chapter 2: Pour and Scoop",
+      "summary": "Use cups, spoons and a tray with dry rice or water. Demonstrate slowly, then let your child scoop and pour.",
+      "worksheets": [
+        {
+          "id": "pour-and-scoop",
+          "title": "Pour and Scoop",
+          "skill": "Scooping and pouring",
+          "area": "Fine Motor",
+          "minutes": 8,
+          "goal": "Use cups, spoons and a tray with dry rice or water. Demonstrate slowly, then let your child scoop and pour.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Use cups, spoons and a tray with dry rice or water. Demonstrate slowly, then let your child scoop and pour.",
+          "takeaway": "Small repeated movements build control.",
+          "sheet": {
+            "kind": "count",
+            "chapter": 2,
+            "rows": [
+              {
+                "target": 1,
+                "choices": [
+                  1,
+                  2,
+                  3
+                ],
+                "answer": 0
+              },
+              {
+                "target": 2,
+                "choices": [
+                  1,
+                  2,
+                  3
+                ],
+                "answer": 1
+              },
+              {
+                "target": 3,
+                "choices": [
+                  3,
+                  1,
+                  2
+                ],
+                "answer": 0
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "pour-and-scoop-1",
+              "type": "count",
+              "prompt": "Choose the 1 example"
+            },
+            {
+              "id": "pour-and-scoop-2",
+              "type": "count",
+              "prompt": "Choose the 2 example"
+            },
+            {
+              "id": "pour-and-scoop-3",
+              "type": "count",
+              "prompt": "Choose the 3 example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "title": "Chapter 3: Move and Play",
+      "summary": "Offer simple actions such as stretch, push, jump or roll. Follow your child’s lead and pause when they show they need a break.",
+      "worksheets": [
+        {
+          "id": "move-and-play",
+          "title": "Move and Play",
+          "skill": "Copying safe movements",
+          "area": "Movement",
+          "minutes": 8,
+          "goal": "Offer simple actions such as stretch, push, jump or roll. Follow your child’s lead and pause when they show they need a break.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Offer simple actions such as stretch, push, jump or roll. Follow your child’s lead and pause when they show they need a break.",
+          "takeaway": "Movement should feel safe and fun.",
+          "sheet": {
+            "kind": "shape",
+            "chapter": 3,
+            "rows": [
+              {
+                "target": "circle",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "square",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "triangle",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "move-and-play-1",
+              "type": "match",
+              "prompt": "Choose the CIRCLE example"
+            },
+            {
+              "id": "move-and-play-2",
+              "type": "match",
+              "prompt": "Choose the SQUARE example"
+            },
+            {
+              "id": "move-and-play-3",
+              "type": "match",
+              "prompt": "Choose the TRIANGLE example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "title": "Chapter 4: Sensory Walk",
+      "summary": "Take a short walk and notice one sound, color, texture or movement at a time. Keep the route familiar and optional.",
+      "worksheets": [
+        {
+          "id": "sensory-walk",
+          "title": "Sensory Walk",
+          "skill": "Noticing the environment",
+          "area": "Sensory Awareness",
+          "minutes": 8,
+          "goal": "Take a short walk and notice one sound, color, texture or movement at a time. Keep the route familiar and optional.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Take a short walk and notice one sound, color, texture or movement at a time. Keep the route familiar and optional.",
+          "takeaway": "Notice without pressure.",
+          "sheet": {
+            "kind": "color",
+            "chapter": 4,
+            "rows": [
+              {
+                "target": "red",
+                "choices": [
+                  "red",
+                  "blue",
+                  "yellow"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "blue",
+                "choices": [
+                  "red",
+                  "blue",
+                  "yellow"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "yellow",
+                "choices": [
+                  "red",
+                  "blue",
+                  "yellow"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "sensory-walk-1",
+              "type": "match",
+              "prompt": "Choose the RED example"
+            },
+            {
+              "id": "sensory-walk-2",
+              "type": "match",
+              "prompt": "Choose the BLUE example"
+            },
+            {
+              "id": "sensory-walk-3",
+              "type": "match",
+              "prompt": "Choose the YELLOW example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c5",
+      "title": "Chapter 5: Sort by Shape",
+      "summary": "Sort safe household objects by shape. Start with two groups, then add a third when your child is ready.",
+      "worksheets": [
+        {
+          "id": "sort-by-shape",
+          "title": "Sort by Shape",
+          "skill": "Sorting objects",
+          "area": "Early Thinking",
+          "minutes": 8,
+          "goal": "Sort safe household objects by shape. Start with two groups, then add a third when your child is ready.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Sort safe household objects by shape. Start with two groups, then add a third when your child is ready.",
+          "takeaway": "One clear rule at a time makes sorting easier.",
+          "sheet": {
+            "kind": "shape",
+            "chapter": 5,
+            "rows": [
+              {
+                "target": "circle",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "square",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "triangle",
+                "choices": [
+                  "circle",
+                  "square",
+                  "triangle"
+                ],
+                "answer": 2
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "sort-by-shape-1",
+              "type": "match",
+              "prompt": "Choose the CIRCLE example"
+            },
+            {
+              "id": "sort-by-shape-2",
+              "type": "match",
+              "prompt": "Choose the SQUARE example"
+            },
+            {
+              "id": "sort-by-shape-3",
+              "type": "match",
+              "prompt": "Choose the TRIANGLE example"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c6",
+      "title": "Chapter 6: My Sensory Choices",
+      "summary": "Offer two safe options, such as quiet or music, soft or rough, and ask your child to show or point to their choice.",
+      "worksheets": [
+        {
+          "id": "my-sensory-choices",
+          "title": "My Sensory Choices",
+          "skill": "Choosing what feels comfortable",
+          "area": "Self-Advocacy",
+          "minutes": 8,
+          "goal": "Offer two safe options, such as quiet or music, soft or rough, and ask your child to show or point to their choice.",
+          "materials": [
+            "Printed worksheet",
+            "Safe household objects"
+          ],
+          "teach": "Offer two safe options, such as quiet or music, soft or rough, and ask your child to show or point to their choice.",
+          "takeaway": "A choice or a break is communication.",
+          "sheet": {
+            "kind": "face",
+            "chapter": 6,
+            "rows": [
+              {
+                "target": "happy",
+                "choices": [
+                  "happy",
+                  "sad",
+                  "angry"
+                ],
+                "answer": 0
+              },
+              {
+                "target": "sad",
+                "choices": [
+                  "happy",
+                  "sad",
+                  "angry"
+                ],
+                "answer": 1
+              },
+              {
+                "target": "happy",
+                "choices": [
+                  "happy",
+                  "sad",
+                  "angry"
+                ],
+                "answer": 0
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "my-sensory-choices-1",
+              "type": "facepick",
+              "prompt": "Choose the HAPPY example"
+            },
+            {
+              "id": "my-sensory-choices-2",
+              "type": "facepick",
+              "prompt": "Choose the SAD example"
+            },
+            {
+              "id": "my-sensory-choices-3",
+              "type": "facepick",
+              "prompt": "Choose the HAPPY example"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
