@@ -2,14 +2,13 @@
   "name": "neuroai",
   "private": true,
   "scripts": {
-    "setup": "npm i && npm --prefix backend i && npm --prefix frontend i && npm --prefix neuro-ai-landing-page-development i",
+    "setup": "npm i && npm --prefix backend i && npm --prefix frontend i",
     "seed": "npm --prefix backend run seed",
     "seed:reset": "npm --prefix backend run seed -- --force",
     "backend": "npm --prefix backend start",
     "frontend": "npm --prefix frontend run dev",
-    "landing": "npm --prefix neuro-ai-landing-page-development run dev",
-    "predev": "npx --yes kill-port 5000 3000 3001",
-    "dev": "npm run seed && concurrently -n api,web,landing -c blue,green,magenta \"npm:backend\" \"npm:frontend\" \"npm:landing\""
+    "predev": "npx --yes kill-port 5000 3000",
+    "dev": "npm run seed && concurrently -n api,web -c blue,green \"npm:backend\" \"npm:frontend\""
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
